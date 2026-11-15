@@ -43,6 +43,7 @@ export function setupUI({ canvas, act, onTap, onDrag }) {
     if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
     if (k === 'p' || k === 'escape') return act('pause');
     if (k === 'm') return act('map');
+    if (k === 'n') return act('notebook');
     if (k === 'f') return act('feedback');
     if (k === 'enter') return act('start');
     keys.add(k);

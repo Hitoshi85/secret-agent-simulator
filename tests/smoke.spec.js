@@ -9,7 +9,7 @@ async function open(page) {
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto('/index.html');
   await page.waitForFunction(() => window.__agent && window.__agent.stats.frames > 2, null, { timeout: 60000 });
-  await page.evaluate(() => { window.__agent.paused = true; window.__agent.act('start'); });
+  await page.evaluate(() => { window.__agent.paused = true; window.__agent.act('start'); window.__agent.act('close'); });
   return errors;
 }
 

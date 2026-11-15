@@ -8,7 +8,7 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 - **Play dev (latest main):** https://hitoshi85.github.io/secret-agent-simulator/dev/ (add `?v=<short commit>`
   on a phone to skip a cached copy; the current links with that suffix are always in [README.md](README.md))
 - **Backlog:** [open issues](https://github.com/Hitoshi85/secret-agent-simulator/issues)
-- **Mockups:** the agreed look (v2) is in [docs/mockups/](docs/mockups/)
+- **Mockups:** the agreed look (v2) and the case screens (case 01) are in [docs/mockups/](docs/mockups/)
 - **Last updated:** 2026-11-15
 
 ## 1. Core requirements
@@ -25,15 +25,16 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 | R6 | Third person, tap to walk (Hitoshi's choice): the camera follows behind the agent; a tap on the street walks there along the streets (pathfinding, never through buildings or the river; a tap on a building or the water walks to the nearest street); dragging turns the camera and tilts it up to the domes; the camera swings back behind the agent while walking and pulls in when a building is in the way. Keyboard: W A S D or arrows, Q / E to turn. | Done (#1) |
 | R7 | People about 1.75 m tall with walking poses, faces, varied clothes, skirts, coats, hats and bags; a crowd of about 70 strolls the streets and piazzas. | Done (#1) |
 | R8 | The player's own agent (Hitoshi's choice): a name and look picked at the start and kept across cities. Until that screen exists the agent wears a placeholder charcoal suit, tie and sunglasses, with a blue ring underfoot. | Placeholder (#1) |
-| R9 | HUD on the phone: the current place (it changes as you walk), the time, a Heat meter, and Phone, Case board and Map buttons; Map jumps to Piazza del Duomo, Via dei Calzaiuoli, Piazza della Signoria, Ponte Vecchio and Oltrarno. Phone and Case board say they come in a later build. | Done (#1) |
+| R9 | HUD on the phone: the current place (it changes as you walk), the time, a Heat meter, and Phone, Notebook and Map buttons (N opens the Notebook); Map jumps to Piazza del Duomo, Via dei Calzaiuoli, Piazza della Signoria, Ponte Vecchio and Oltrarno. The Phone opens gadget puzzles once you hold one. | Done (#1, #6) |
 | R10 | Pause with the ❚❚ button, P or Esc; switching tabs or apps pauses. Players send feedback with the 💬 button (or F): it pauses and opens a prefilled GitHub feedback issue with the game's context (version, where in the city, time). | Done (#1) |
-| R11 | Gameplay: tradecraft and deduction (Hitoshi's choice): gather clues around the city, read people and documents, spot and shake tails, use dead drops, and work out who the mole is; cars and trains move you between leads. | Planned |
-| R12 | Present day (Hitoshi's choice), with gadgets and hacking as logic-puzzle minigames (hacking CCTV, cloning phones, drone surveillance), kept cerebral. | Planned |
+| R11 | Gameplay: tradecraft and deduction (Hitoshi's choice): gather clues around the city, read people and documents, spot and shake tails, use dead drops, and work out who did it; cars and trains move you between leads. First case, "The Dossier" (Hitoshi's choices, 2026-11-15): a courier's dossier was lifted under the Loggia; witnesses and traces around the centre narrow five suspects in the crowd to the thief; tap the thief to recover it. | In progress (#5, #6) |
+| R12 | Present day (Hitoshi's choice), with gadgets and hacking as logic-puzzle minigames (hacking CCTV, cloning phones, drone surveillance), kept cerebral. First one: crack the thief's dropped phone with a 3 x 3 unlock pattern, 3 tries. | In progress (#6) |
 | R13 | Driving: you drive the cars yourself on the roads around the centre (the Viale ring, up to Piazzale Michelangelo and Fiesole, out into the Chianti hills); the historic centre stays on foot, as in the real limited-traffic zone (Hitoshi's choice). | Planned |
 | R14 | Trains: the case climaxes on a high-speed train leaving Santa Maria Novella; walk the carriages, read the passengers and find the contact before the next stop. The same train later links new cities (Hitoshi's choice). | Planned |
-| R15 | Mistakes raise Heat: wrong accusations, sloppy hacks and being spotted close leads and bring more tails; at the top the cover is blown and the mission fails (Hitoshi's choice). | Planned |
-| R16 | The Florence case is hand written, with the culprit and clue placements reshuffled each playthrough so it stays fair and replayable; an automatic playtest checks every shuffle is solvable (Hitoshi's choice). | Planned |
+| R15 | Mistakes raise Heat (Hitoshi's choice). In the dossier case only wrong accusations do, and you may accuse anyone; at 3 the thief notices you and leaves for the 19:10 at Santa Maria Novella (Hitoshi's choices, 2026-11-15). For now that ends the case with a retry; the station chase comes later. | In progress (#6) |
+| R16 | The Florence case is hand written, with the culprit reshuffled each playthrough so it stays fair and replayable; an automatic playtest checks every shuffle is solvable (Hitoshi's choice). Each decoy suspect differs from the thief in one trait, so the firm clues always leave only the thief. | Done (#6) |
 | R17 | One case takes about 15 minutes in one sitting (Hitoshi's choice). | Planned |
+| R18 | Cases are separate code, easy to swap and edit (Hitoshi's requirement, 2026-11-15): each case is one data file in `src/cases/` (text, traits, witnesses, traces, places), run by the shared engine in `src/case/`; `?case=<id>` picks one. | Done (#6) |
 
 ### How we work
 
@@ -74,6 +75,9 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 | 2026-11-15 | Look mockup v1 (Duomo, Ponte Vecchio at dusk): "More detail first". | Mockup v2: richer facades, life-size people, an agent close-up. |
 | 2026-11-15 | Mockup v2: "Build it as shown". | Built the walkable slice from the Duomo to Ponte Vecchio and Oltrarno in #1 (R2 to R10). |
 | 2026-11-15 | Main is protected now, so the deploy could not push the README play-links update. Chose "Open a small PR instead". | The links job opens a `bot/play-links` PR that the merge queue merges with no screenshot, review or deploy; #2. |
+| 2026-11-15 | "Where is the case/mission?" First case cards: "Recover the stolen dossier"; "Witnesses and traces"; "Free accusations, Heat each"; "Wrong guesses only, thief flees"; "Crack the thief's phone". | Case 01 "The Dossier" built from those choices in #6 (R11, R12, R15, R16). |
+| 2026-11-15 | "Keep cases as separate code so it's easy to swap/edit cases." | Each case is a data file in `src/cases/`, run by the engine in `src/case/` (R18), #6. |
+| 2026-11-15 | Case mockup (five phone screens): "Build it as shown". | Saved as docs/mockups/case-01-dossier.png and built in #6. |
 
 ## 4. Open backlog
 
@@ -82,7 +86,8 @@ Add the `ready` label to an issue to start it.
 | Issue | Task | Status |
 |---|---|---|
 | – | Agent designer: name and look (R8) | To file |
-| – | First case in Florence: clues, tails, dead drops, the accusation (R11, R15, R16) | To file |
+| #5 | First case: recover the stolen dossier (R11, R12, R15, R16, R18) | In progress (#6) |
+| – | Station chase when the thief gets away (R14, R15) | To file |
 
 ## 5. Ideas mentioned, not yet requested
 

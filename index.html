@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1b1612">
 <title>Secret Agent Simulator · Florence</title>
-<link rel="stylesheet" href="style.css?v=1">
+<link rel="stylesheet" href="style.css?v=2">
 <script type="importmap">
 { "imports": {
   "three": "./vendor/three-0.187.0/three.module.js",
@@ -19,7 +19,7 @@
   <div class="top">
     <div id="loc" class="panel"><b id="locName">Piazza del Duomo</b><span id="locSub">Firenze · 17:40</span></div>
     <div class="right">
-      <div id="heat" class="panel" title="Heat: how much attention you have drawn">HEAT<div class="bar"><i style="width:12%"></i></div></div>
+      <div id="heat" class="panel" title="Heat: wrong accusations so far">HEAT <span id="heatN">0 / 3</span><div class="bar"><i id="heatBar" style="width:4%"></i></div></div>
       <div class="small">
         <button id="pause" class="chip" type="button" aria-label="Pause">❚❚</button>
         <button id="feedback" class="chip" type="button" aria-label="Send feedback">💬</button>
@@ -28,12 +28,13 @@
   </div>
   <div id="hint">Tap the street to walk · drag to look around</div>
   <div id="toast" role="status"></div>
+  <div id="talk" class="talk" hidden><p id="talkWho" class="kicker"></p><p id="talkText"></p><p id="talkNote" class="note"></p><button type="button" class="x" data-case="talk" aria-label="Close">✕</button></div>
   <div id="touch">
     <button type="button" data-act="phone">📱 Phone</button>
-    <button type="button" data-act="case">🗂 Case board</button>
+    <button type="button" data-act="notebook">📓 Notebook</button>
     <button type="button" data-act="map">🗺 Map</button>
   </div>
-  <p class="help">Tap or click to walk · drag to look · W A S D or arrows to walk · Q / E turn · M map · P pause · F feedback</p>
+  <p class="help">Tap or click to walk · drag to look · W A S D or arrows to walk · Q / E turn · N notebook · M map · P pause · F feedback</p>
 </div>
 <div id="map" class="overlay" hidden>
   <div class="sheet">
@@ -44,14 +45,15 @@
   </div>
 </div>
 <div id="paused" class="overlay" hidden><div class="sheet"><h2>Paused</h2><button type="button" data-act="pause">▶ Resume</button></div></div>
+<div id="casesheet" class="overlay" hidden><div id="caseBody" class="sheet case"></div></div>
 <div id="title" class="overlay">
   <div class="sheet">
     <p class="kicker">Secret Agent Simulator</p>
     <h1>Florence</h1>
-    <p>Your handler says the contact is somewhere between the Duomo and Ponte Vecchio. Walk the city and get a feel for it first.</p>
+    <p>A case is waiting in the centre, between the Duomo and Ponte Vecchio. Tradecraft over gunplay.</p>
     <button type="button" id="start" data-act="start">Begin</button>
   </div>
 </div>
-<script type="module" src="game.js?v=1"></script>
+<script type="module" src="game.js?v=2"></script>
 </body>
 </html>
