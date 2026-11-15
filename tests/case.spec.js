@@ -39,6 +39,28 @@ test('every case is solvable: one thief, decoys differ in one trait, firm clues 
   expect(r.thieves, 'the thief changes from play to play').toBeGreaterThan(5);
 });
 
+test('the Notebook and Phone stay shut on the title screen', async ({ page }) => {
+  await page.goto('/index.html');
+  await page.waitForFunction(() => window.__agent && window.__agent.stats.frames > 2, null, { timeout: 60000 });
+  await page.keyboard.press('n');
+  expect(await page.evaluate(() => window.__agent.act('phone'))).toBe(false);
+  await expect(page.locator('#casesheet')).toBeHidden();
+});
+
+test('replaying frees the old suspects', async ({ page }) => {
+  await open(page);
+  const r = await page.evaluate(() => {
+    const A = window.__agent, old = A.caseView.targets.filter((t) => t.kind === 'suspect').map((t) => t.mesh);
+    let disposed = 0;
+    for (const m of old) for (const g of m.userData.frames) g.addEventListener('dispose', () => disposed++);
+    A.act('again');
+    return { removed: old.every((m) => !m.parent), disposed, frames: old.length * old[0].userData.frames.length, people: A.crowd.length };
+  });
+  expect(r.removed).toBe(true);
+  expect(r.disposed).toBe(r.frames);
+  expect(r.people).toBe(75);
+});
+
 test('the case file opens the case, and every witness and trace stands on a street', async ({ page }) => {
   const errors = await open(page);
   await expect(page.locator('#caseBody h1')).toHaveText('The Dossier');
