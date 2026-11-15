@@ -90,8 +90,8 @@ function act(action, a, b) {
       document.getElementById('pause').textContent = state.paused ? '▶' : '❚❚';
       return state.paused;
     }
-    case 'phone': if (!caseView.phone()) toast('No messages from your handler'); return true;
-    case 'notebook': caseView.notebook(); return true;
+    case 'phone': if (state.state !== 'playing') return false; if (!caseView.phone()) toast('No messages from your handler'); return true;
+    case 'notebook': if (state.state !== 'playing') return false; caseView.notebook(); return true;
     case 'close': caseView.close(); return true;
     case 'accuse': return caseView.accuse(a);
     case 'dot': return caseView.dot(a);

@@ -34,7 +34,7 @@ export function makeCaseView({ scene, crowd, def, random = Math.random }) {
 
   // A new case: a fresh thief and suspects, every clue back in place.
   v.reset = () => {
-    for (const p of v.suspectPeople) { scene.remove(p.mesh); crowd.splice(crowd.indexOf(p), 1); }
+    for (const p of v.suspectPeople) { scene.remove(p.mesh); crowd.splice(crowd.indexOf(p), 1); for (const g of p.mesh.userData.frames) g.dispose(); }
     v.suspectPeople = []; v.targets = v.targets.filter((t) => t.kind !== 'suspect');
     v.c = newCase(def, random);
     for (const t of v.targets) { t.mesh.visible = true; t.ring.visible = true; }
@@ -150,7 +150,7 @@ export function makeCaseView({ scene, crowd, def, random = Math.random }) {
     const clue = def.clues.find((k) => k.id === id);
     v.gadget = id; v.order = [];
     open(`<p class="kicker">Gadget · unlock</p><h2>${esc(clue.what)}</h2>
-      <p>Smudges show ${clue.pattern.length} dots. Find the order: it starts top left and each step goes to a dot next to it.</p>
+      <p>Smudges show ${clue.pattern.length} dots. Find the order: it starts top left, and each step goes to a dot next to it (up, down or sideways, never diagonally).</p>
       <div class="pad">${[...Array(9).keys()].map((d) => `<button type="button" class="dot${clue.pattern.includes(d) ? ' smudge' : ''}" data-dot="${d}" aria-label="Dot ${d + 1}"></button>`).join('')}</div>
       <p class="small" id="padMsg">${v.c.tries[id]} tries before it locks.</p>
       <button type="button" class="close" data-case="close">Close</button>`, 'gadget');
