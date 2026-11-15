@@ -12,6 +12,12 @@ delete iPhone.defaultBrowserType;
 const SITES = [['repo', '/index.html'], ['prod', '/_site-test/index.html'], ['dev', '/_site-test/dev/index.html']];
 const ready = (page) => page.waitForFunction(() => window.__agent && window.__agent.stats.frames > 2, null, { timeout: 60000 });
 
+// The case file opens after Begin (on builds that have cases): take the case like a player would.
+async function takeCase(page) {
+  const sheet = page.locator('#casesheet');
+  if (await sheet.count() && await sheet.isVisible()) await page.tap('#caseBody button[data-case="close"]');
+}
+
 for (const [site, url] of SITES)
 for (const [name, viewport] of [['portrait', { width: 390, height: 844 }], ['landscape', { width: 844, height: 390 }]]) {
   test.describe(`${site} phone ${name} ${viewport.width}x${viewport.height}`, () => {
@@ -19,7 +25,7 @@ for (const [name, viewport] of [['portrait', { width: 390, height: 844 }], ['lan
 
     test('fits without scrolling, with big enough buttons', async ({ page }) => {
       await page.goto(url); await ready(page);
-      await page.tap('#start');
+      await page.tap('#start'); await takeCase(page);
       const r = await page.evaluate(() => {
         const box = (el) => { const b = el.getBoundingClientRect(); return { top: b.top, left: b.left, bottom: b.bottom, right: b.right, height: b.height }; };
         return {
@@ -43,7 +49,7 @@ for (const [name, viewport] of [['portrait', { width: 390, height: 844 }], ['lan
 
     test('tap the street to walk, drag to turn, pause and resume', async ({ page }) => {
       await page.goto(url); await ready(page);
-      await page.tap('#start');
+      await page.tap('#start'); await takeCase(page);
       const vp = page.viewportSize();
       const before = await page.evaluate(() => [window.__agent.agent.x, window.__agent.agent.z]);
       await page.touchscreen.tap(vp.width / 2, vp.height * 0.78); // the paving just ahead of the agent
@@ -66,7 +72,7 @@ test.describe('on a phone', () => {
 
   test('the Map jumps to Ponte Vecchio', async ({ page }) => {
     await page.goto('/index.html'); await ready(page);
-    await page.tap('#start');
+    await page.tap('#start'); await takeCase(page);
     await page.tap('#touch [data-act="map"]');
     await expect(page.locator('#map')).toBeVisible();
     await page.tap('#places [data-place="ponte"]');
@@ -77,7 +83,7 @@ test.describe('on a phone', () => {
   test('Feedback pauses and opens a prefilled feedback issue', async ({ page }) => {
     await page.goto('/index.html'); await ready(page);
     await page.evaluate(() => { window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; }; });
-    await page.tap('#start');
+    await page.tap('#start'); await takeCase(page);
     await page.tap('#feedback');
     expect(await page.evaluate(() => window.__agent.state.paused)).toBe(true);
     const opened = await page.evaluate(() => window.__opened);

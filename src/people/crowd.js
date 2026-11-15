@@ -30,7 +30,8 @@ export function updateCrowd(people, dt) {
     if (p.wait > 0) { p.wait -= dt; setPose(m, 0.25); continue; }
     if (!p.target) {
       const a = rnd() * Math.PI * 2, d = 8 + rnd() * 30, tx = m.position.x + Math.cos(a) * d, tz = m.position.z + Math.sin(a) * d;
-      if (walkable(tx, tz) && lineClear(m.position.x, m.position.z, tx, tz)) p.target = [tx, tz]; else { p.wait = 0.3; continue; }
+      const away = p.home && Math.hypot(tx - p.home[0], tz - p.home[1]) > p.range; // case suspects keep to their haunt
+      if (!away && walkable(tx, tz) && lineClear(m.position.x, m.position.z, tx, tz)) p.target = [tx, tz]; else { p.wait = 0.3; continue; }
     }
     tmp.set(p.target[0] - m.position.x, 0, p.target[1] - m.position.z);
     const dist = tmp.length();

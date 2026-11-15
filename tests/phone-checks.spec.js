@@ -21,7 +21,7 @@ async function ready(page) {
   await page.waitForFunction(() => window.__agent && window.__agent.stats.frames > 2, null, { timeout: 60000 });
 }
 async function at(page, place) {
-  await page.evaluate((place) => { const A = window.__agent; A.paused = true; A.act('start'); A.act('jump', place); for (let i = 0; i < 10; i++) A.step(0.05); A.render(); }, place);
+  await page.evaluate((place) => { const A = window.__agent; A.paused = true; A.act('start'); A.act('close'); A.act('jump', place); for (let i = 0; i < 10; i++) A.step(0.05); A.render(); }, place);
 }
 function summary(head, line) {
   if (!process.env.GITHUB_STEP_SUMMARY) return;

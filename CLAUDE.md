@@ -28,6 +28,9 @@ folder and point the import map at it. No bundler.
 | `src/camera.js` | Third-person follow camera: yaw and pitch from drags, swing behind while walking, pull-in near walls |
 | `src/scene.js` | Renderer, light, shadows following the agent, sky, fog and ground |
 | `src/ui.js` | HUD, buttons, taps and drags on the canvas, keys, toasts |
+| `src/cases/*.js` | One data file per case (text, traits, witnesses, traces, places); `src/cases/index.js` lists them, `?case=<id>` picks one |
+| `src/case/engine.js` | Case rules shared by every case, no 3D or page code: random thief, one-trait decoys, clues, the phone pattern, accusations, Heat |
+| `src/case/view.js` | A case in the city and on screen: witnesses, traces and suspects to tap, the case file, talk card, Notebook, phone puzzle, endings |
 
 Performance on phones comes first: merge static geometry (`mergeByMaterial` or the builders in
 `buildings.js`), share materials, avoid per-frame allocations, and keep within the rendering budget
@@ -77,12 +80,13 @@ checked by `tests/phone-checks.spec.js` (250 draw calls, 400k triangles, 4 ms of
 `game.js` exposes `window.__agent` for tests: `state` (`state` title/playing, `paused`, `map`, `area`, `clock`),
 `stats` (`frames`, `calls` and `triangles` of the last render, `people`, `buildings`, `lastWalkFound`),
 `agent` (`x`, `z`, `heading`, `path`, `walking`, `walked`), `crowd` (each `mesh`), `cam` (`yaw`, `pitch`),
-`act(action, ...)` (`start`, `walkTo` x z, `jump` place-id, `map`, `pause`, `phone`, `case`, `feedback`, `turn` radians),
+`act(action, ...)` (`start`, `walkTo` x z, `jump` place-id, `map`, `pause`, `phone`, `notebook`, `close`, `interact` kind id, `accuse` suspect-id, `dot` 0-8, `again`, `feedback`, `turn` radians),
+`case` (the running case: `suspects`, `thief`, `notes`, `heat`, `status`), `caseView` (its `targets`),
 `step(dt)` (advance the simulation; does nothing while paused, on the title or with the Map open), `render()`,
 `paused` (set true to stop the real-time loop and drive frames from the test), `setPaused(bool)` (player pause),
 `PLACES`, `walkable(x, z)`, `findPath(ax, az, bx, bz)`, `areaAt(x, z)`, `version`.
 Keep it working when refactoring; add to it when a new feature needs checking.
-`tests/smoke.spec.js` walks the agent from the Duomo to Ponte Vecchio. `tests/phone-checks.spec.js` saves phone
+`tests/smoke.spec.js` walks the agent from the Duomo to Ponte Vecchio. `tests/case.spec.js` checks every case shuffle is solvable and plays the dossier case end to end. `tests/phone-checks.spec.js` saves phone
 screenshots to `phone-screenshots/` (a CI artifact) and enforces the rendering budget. `tests/mobile.spec.js`
 checks the phone layout and touch controls on the repo copy and both built sites.
 
