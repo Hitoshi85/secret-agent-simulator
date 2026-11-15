@@ -11,6 +11,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+    paths-ignore: [README.md] # a play-links update changes nothing on the site
   workflow_dispatch:
     inputs:
       action:
@@ -142,7 +143,9 @@ jobs:
       - name: Live check (the deployed game loads and runs)
         run: npx playwright test tests/live.spec.js
 
-  # Keeps the play links in README.md current and posts them on the merged PR.
+  # Keeps the play links in README.md current and posts them on the merged PR. main only takes
+  # changes through PRs, so the README update goes to the bot/play-links branch as a small PR that
+  # the merge queue merges (README-only, so it needs no screenshot, review or deploy).
   links:
     needs: [deploy, verify-live]
     if: ${{ !cancelled() && needs.deploy.result == 'success' && needs.verify-live.result == 'success' }}
@@ -151,7 +154,9 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
+      actions: write # starts the merge queue, since a PR opened with GITHUB_TOKEN fires no events
     env:
+      GH_TOKEN: ${{ github.token }}
       SITE: ${{ needs.deploy.outputs.page_url }}
       PROD_SHA: ${{ needs.deploy.outputs.prod_sha }}
       PROD_TAG: ${{ needs.deploy.outputs.prod_tag }}
@@ -174,9 +179,19 @@ jobs:
           if git diff --quiet; then echo "README links already current."; exit 0; fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -am "Update play links: prod ${PROD_SHA:0:7}, dev ${DEV_SHA:0:7} [skip ci]"
-          for i in 1 2 3 4; do git push origin HEAD:main && exit 0; sleep $((i * 3)); git pull --rebase origin main; done
-          exit 1
+          branch=bot/play-links
+          title="Update play links: prod ${PROD_SHA:0:7}, dev ${DEV_SHA:0:7}"
+          git switch -c "$branch"
+          git commit -am "$title"
+          git push --force origin "HEAD:refs/heads/$branch"
+          body="Updates the version labels next to the play links in README.md after a verified deploy. Opened by the Pages workflow; the merge queue merges it."
+          pr=$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number // empty')
+          if [ -n "$pr" ]; then
+            gh pr edit "$pr" --title "$title" --body "$body"
+          else
+            gh pr create --head "$branch" --base main --title "$title" --body "$body"
+          fi
+          gh workflow run merge-queue.yml --ref main
       - name: Post the play links on the merged PR
         if: env.ACTION == 'deploy'
         uses: actions/github-script@v7

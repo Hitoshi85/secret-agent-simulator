@@ -73,6 +73,7 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 | 2026-11-15 | Gameplay: tradecraft and deduction; stylized hand-built Florence; third person, tap to walk; present day; gadgets and hacking puzzles; drive the hills, walk the centre; the train as a playable scene; Heat and consequences; written case with a random culprit; about 15 minutes in one sitting; mockups then a walkable slice; your own agent. | R3, R6, R8, R11 to R17. |
 | 2026-11-15 | Look mockup v1 (Duomo, Ponte Vecchio at dusk): "More detail first". | Mockup v2: richer facades, life-size people, an agent close-up. |
 | 2026-11-15 | Mockup v2: "Build it as shown". | Built the walkable slice from the Duomo to Ponte Vecchio and Oltrarno in #1 (R2 to R10). |
+| 2026-11-15 | Main is protected now, so the deploy could not push the README play-links update. Chose "Open a small PR instead". | The links job opens a `bot/play-links` PR that the merge queue merges with no screenshot, review or deploy; #2. |
 
 ## 4. Open backlog
 

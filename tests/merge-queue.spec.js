@@ -44,6 +44,17 @@ test('which PRs may merge on their own', () => {
   expect(q.eligibility(pr({ labels: [{ name: 'automerge' }] }), big, REPO).ok).toBe(true);
 });
 
+test('the Pages README play-links PR needs no screenshot', () => {
+  const links = pr({ body: 'Updates the play links.', head: { ref: q.PLAY_LINKS_BRANCH, repo: { full_name: REPO } } });
+  const readme = [{ filename: 'README.md', additions: 2, deletions: 2 }];
+  expect(q.playLinksOnly(links, readme)).toBe(true);
+  expect(q.eligibility(links, readme, REPO).ok).toBe(true);
+  // Any other file, or another branch, needs a screenshot as usual.
+  expect(q.playLinksOnly(links, [...readme, ...files(1)])).toBe(false);
+  expect(q.eligibility(links, [...readme, ...files(1)], REPO).reason).toMatch(/screenshot/);
+  expect(q.playLinksOnly({ ...links, head: { ref: 'claude/x', repo: { full_name: REPO } } }, readme)).toBe(false);
+});
+
 test('check states', () => {
   const ok = (name, id = 1) => ({ id, name, status: 'completed', conclusion: 'success' });
   expect(q.checksState([ok(q.REQUIRED_CHECK), ok('Pages', 2)])).toBe('success');
