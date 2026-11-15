@@ -1,0 +1,198 @@
+name: Deploy to GitHub Pages
+
+# One Pages site, two copies of the game:
+#   prod  https://hitoshi85.github.io/secret-agent-simulator/       the version last promoted with "Ship"
+#   dev   https://hitoshi85.github.io/secret-agent-simulator/dev/   the latest main
+# A push to main (or the merge queue) updates dev only; prod is rebuilt from the `prod` tag.
+# Run this workflow by hand with action "ship" to promote what dev serves to prod: it tags the
+# commit `prod-N`, publishes a GitHub release and moves the `prod` tag. Action "rollback" with a
+# `prod-N` tag points prod back at that release. Every run checks both live sites afterwards.
+# One-time setup: Settings -> Pages -> Build and deployment -> Source: "GitHub Actions".
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'deploy (main to dev), ship (dev to prod) or rollback (prod to an earlier release)'
+        type: choice
+        options: [deploy, ship, rollback]
+        default: deploy
+      tag:
+        description: 'rollback only: the prod-N release to go back to (empty: the one before the current)'
+        required: false
+        default: ''
+
+# Only the deploy job gets Pages and OIDC rights; see its own permissions.
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  test:
+    # Ship and rollback only move already tested commits, so they skip the test run.
+    if: ${{ !inputs.action || inputs.action == 'deploy' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+
+  deploy:
+    needs: test
+    if: ${{ !cancelled() && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # prod-N tags and releases
+      pages: write
+      id-token: write
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+      prod_sha: ${{ steps.plan.outputs.prod_sha }}
+      prod_tag: ${{ steps.plan.outputs.prod_tag }}
+      dev_sha: ${{ steps.plan.outputs.dev_sha }}
+      shipped: ${{ steps.plan.outputs.new_release }}
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      ACTION: ${{ inputs.action || 'deploy' }}
+      ROLLBACK_TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # all commits and tags: prod and dev come from different commits
+      - id: pages
+        uses: actions/configure-pages@v5
+      - name: Decide which commit each site serves
+        id: plan
+        env:
+          SITE: ${{ steps.pages.outputs.base_url }}
+        run: .github/scripts/plan.sh # tested by tests/plan.spec.js
+      - name: Build both sites
+        run: .github/scripts/build-site.sh "${{ steps.plan.outputs.prod_sha }}" "${{ steps.plan.outputs.dev_sha }}" _site "${{ steps.plan.outputs.prod_tag }}"
+      - uses: actions/upload-pages-artifact@v3
+      - id: deployment
+        uses: actions/deploy-pages@v4
+      # Tags move only after the deploy worked, so the `prod` tag always matches the live prod site.
+      - name: Tag and release prod
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PROD_SHA: ${{ steps.plan.outputs.prod_sha }}
+          PROD_TAG: ${{ steps.plan.outputs.prod_tag }}
+          NOTES_FROM_TAG: ${{ steps.plan.outputs.prev_tag }}
+          NEW_RELEASE: ${{ steps.plan.outputs.new_release }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if [ "$NEW_RELEASE" = true ]; then
+            git tag "$PROD_TAG" "$PROD_SHA"
+            git push origin "refs/tags/$PROD_TAG"
+            notes=(--generate-notes); [ -n "$NOTES_FROM_TAG" ] && notes+=(--notes-start-tag "$NOTES_FROM_TAG")
+            gh release create "$PROD_TAG" --verify-tag --title "$PROD_TAG (${PROD_SHA:0:7})" "${notes[@]}"
+          fi
+          git tag -f prod "$PROD_SHA"
+          git push -f origin refs/tags/prod
+
+  # Confirms each live site really serves its commit and the game starts.
+  verify-live:
+    needs: deploy
+    # Ship and rollback skip the test job; without this the skip would carry over and skip the live check.
+    if: ${{ !cancelled() && needs.deploy.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        site: [prod, dev]
+    env:
+      LIVE_URL: ${{ needs.deploy.outputs.page_url }}${{ matrix.site == 'dev' && 'dev/' || '' }}
+      EXPECT_SHA: ${{ matrix.site == 'dev' && needs.deploy.outputs.dev_sha || needs.deploy.outputs.prod_sha }}
+      # Prod must also report its release (prod-N), so a Ship or Rollback is confirmed by name.
+      EXPECT_TAG: ${{ matrix.site == 'prod' && needs.deploy.outputs.prod_tag || '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait until the live ${{ matrix.site }} site serves its commit
+        run: |
+          for i in $(seq 1 60); do
+            live=$(curl -fsS -H 'Cache-Control: no-cache' "${LIVE_URL}version.json?t=$(date +%s)" | jq -r .sha || true)
+            if [ "$live" = "$EXPECT_SHA" ]; then echo "Live ${{ matrix.site }} serves $EXPECT_SHA"; exit 0; fi
+            echo "Live: ${live:-none}, want $EXPECT_SHA. Retrying in 10 s ($i/60)."
+            sleep 10
+          done
+          echo "::error::The live ${{ matrix.site }} site did not switch to $EXPECT_SHA within 10 minutes."
+          exit 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Live check (the deployed game loads and runs)
+        run: npx playwright test tests/live.spec.js
+
+  # Keeps the play links in README.md current and posts them on the merged PR.
+  links:
+    needs: [deploy, verify-live]
+    if: ${{ !cancelled() && needs.deploy.result == 'success' && needs.verify-live.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    env:
+      SITE: ${{ needs.deploy.outputs.page_url }}
+      PROD_SHA: ${{ needs.deploy.outputs.prod_sha }}
+      PROD_TAG: ${{ needs.deploy.outputs.prod_tag }}
+      DEV_SHA: ${{ needs.deploy.outputs.dev_sha }}
+      ACTION: ${{ inputs.action || 'deploy' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Update the play links in README.md
+        run: |
+          set -euo pipefail
+          # README shows each site once, as its plain link; only the version labels change.
+          block=$(printf '%s\n' '<!-- play-links:start -->' \
+            "- **Prod** (${PROD_TAG}, ${PROD_SHA:0:7}): ${SITE}" \
+            "- **Dev** (${DEV_SHA:0:7}): ${SITE}dev/" \
+            '<!-- play-links:end -->')
+          BLOCK="$block" perl -0pi -e 's/<!-- play-links:start -->.*?<!-- play-links:end -->/$ENV{BLOCK}/s' README.md
+          { echo "## Live and verified"; echo "- Prod: ${SITE}?v=${PROD_SHA:0:7}"; echo "- Dev: ${SITE}dev/?v=${DEV_SHA:0:7}"; } >> "$GITHUB_STEP_SUMMARY"
+          if git diff --quiet; then echo "README links already current."; exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -am "Update play links: prod ${PROD_SHA:0:7}, dev ${DEV_SHA:0:7} [skip ci]"
+          for i in 1 2 3 4; do git push origin HEAD:main && exit 0; sleep $((i * 3)); git pull --rebase origin main; done
+          exit 1
+      - name: Post the play links on the merged PR
+        if: env.ACTION == 'deploy'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const site = process.env.SITE;
+            const dev = `${site}dev/?v=${process.env.DEV_SHA.slice(0, 7)}`;
+            const prod = `${site}?v=${process.env.PROD_SHA.slice(0, 7)}`;
+            const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner, repo: context.repo.repo, commit_sha: context.sha,
+            });
+            const pr = prs.find((p) => p.merged_at);
+            if (pr) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo, issue_number: pr.number,
+                body: `Live on **dev** and verified: the site serves \`${process.env.DEV_SHA.slice(0, 7)}\` and the game starts.\n\n` +
+                  `Play dev on your phone: ${dev}\nProd is unchanged (${process.env.PROD_TAG}): ${prod}\n\nSay "Ship" to promote this version to prod.`,
+              });
+            }

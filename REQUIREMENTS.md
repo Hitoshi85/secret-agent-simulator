@@ -1,0 +1,89 @@
+# Secret Agent Simulator: requirements and feedback log
+
+The single, always-current record of what the game must do, what has shipped, what the owner
+(Hitoshi) has asked for, and what is next. Every change to the game, and every piece of feedback,
+is recorded here in the same PR or thread that handles it (see the rule in [CLAUDE.md](CLAUDE.md)).
+
+- **Play prod (stable):** https://hitoshi85.github.io/secret-agent-simulator/
+- **Play dev (latest main):** https://hitoshi85.github.io/secret-agent-simulator/dev/ (add `?v=<short commit>`
+  on a phone to skip a cached copy; the current links with that suffix are always in [README.md](README.md))
+- **Backlog:** [open issues](https://github.com/Hitoshi85/secret-agent-simulator/issues)
+- **Mockups:** the agreed look (v2) is in [docs/mockups/](docs/mockups/)
+- **Last updated:** 2026-11-15
+
+## 1. Core requirements
+
+### Game
+
+| # | Requirement | Status |
+|---|---|---|
+| R1 | An original secret agent simulator that is cerebral rather than action based, with international travel, expensive cars and trains. Not a copy: no names, characters, art, music, missions or UI from existing games or films. Working title "Secret Agent Simulator". | In progress |
+| R2 | Runs in a phone browser from a link. Plain HTML/CSS/JS with native ES modules and no build step; 3D with Three.js (vendored under `vendor/three-<version>/`, loaded through an import map). CLAUDE.md lists which module owns what. | Done (#1) |
+| R3 | Starts with one city, Florence, in 3D that looks and feels like Florence: a stylized, hand-built, original low-poly city with painted textures (Hitoshi's choice, mockup v2). The first slice runs from Piazza del Duomo down Via dei Calzaiuoli to Piazza della Signoria, along Via Por Santa Maria to the Arno, over Ponte Vecchio and into Oltrarno (Via de' Guicciardini to Piazza de' Pitti). | Done (#1) |
+| R4 | Landmarks modelled by hand: the Duomo with its ribbed dome and lantern, the striped marble walls and the west front, Giotto's campanile, the Baptistery, Palazzo Vecchio with its tower, the Loggia, the Neptune fountain, the Arno with its embankments, Ponte Vecchio with overhanging shops and the Vasari corridor, and the Oltrarno hills with cypresses and San Miniato. | Done (#1) |
+| R5 | Ordinary streets lined with three- and four-storey palazzi: rusticated ground floors with arched doors and shops, arched windows in stone surrounds, green louvred shutters, flower boxes, deep eaves on dark soffits and terracotta hip roofs. | Done (#1) |
+| R6 | Third person, tap to walk (Hitoshi's choice): the camera follows behind the agent; a tap on the street walks there along the streets (pathfinding, never through buildings or the river; a tap on a building or the water walks to the nearest street); dragging turns the camera and tilts it up to the domes; the camera swings back behind the agent while walking and pulls in when a building is in the way. Keyboard: W A S D or arrows, Q / E to turn. | Done (#1) |
+| R7 | People about 1.75 m tall with walking poses, faces, varied clothes, skirts, coats, hats and bags; a crowd of about 70 strolls the streets and piazzas. | Done (#1) |
+| R8 | The player's own agent (Hitoshi's choice): a name and look picked at the start and kept across cities. Until that screen exists the agent wears a placeholder charcoal suit, tie and sunglasses, with a blue ring underfoot. | Placeholder (#1) |
+| R9 | HUD on the phone: the current place (it changes as you walk), the time, a Heat meter, and Phone, Case board and Map buttons; Map jumps to Piazza del Duomo, Via dei Calzaiuoli, Piazza della Signoria, Ponte Vecchio and Oltrarno. Phone and Case board say they come in a later build. | Done (#1) |
+| R10 | Pause with the ❚❚ button, P or Esc; switching tabs or apps pauses. Players send feedback with the 💬 button (or F): it pauses and opens a prefilled GitHub feedback issue with the game's context (version, where in the city, time). | Done (#1) |
+| R11 | Gameplay: tradecraft and deduction (Hitoshi's choice): gather clues around the city, read people and documents, spot and shake tails, use dead drops, and work out who the mole is; cars and trains move you between leads. | Planned |
+| R12 | Present day (Hitoshi's choice), with gadgets and hacking as logic-puzzle minigames (hacking CCTV, cloning phones, drone surveillance), kept cerebral. | Planned |
+| R13 | Driving: you drive the cars yourself on the roads around the centre (the Viale ring, up to Piazzale Michelangelo and Fiesole, out into the Chianti hills); the historic centre stays on foot, as in the real limited-traffic zone (Hitoshi's choice). | Planned |
+| R14 | Trains: the case climaxes on a high-speed train leaving Santa Maria Novella; walk the carriages, read the passengers and find the contact before the next stop. The same train later links new cities (Hitoshi's choice). | Planned |
+| R15 | Mistakes raise Heat: wrong accusations, sloppy hacks and being spotted close leads and bring more tails; at the top the cover is blown and the mission fails (Hitoshi's choice). | Planned |
+| R16 | The Florence case is hand written, with the culprit and clue placements reshuffled each playthrough so it stays fair and replayable; an automatic playtest checks every shuffle is solvable (Hitoshi's choice). | Planned |
+| R17 | One case takes about 15 minutes in one sitting (Hitoshi's choice). | Planned |
+
+### How we work
+
+| # | Requirement | Status |
+|---|---|---|
+| W1 | All work runs in cloud sessions, not tied to the owner's computer. | In place |
+| W2 | Hitoshi talks only in the project chat with one coordinator; threads send questions, ready PRs and manual steps through it instead of asking in their own thread (Hitoshi's choice, 2026-11-15). | In place |
+| W3 | Questions come as clickable cards, each with options, the recommended one first (Hitoshi's choice, 2026-11-15). At kickoff he asked for questions one at a time; for later features ask about every change, not deciding small choices alone. | In place |
+| W4 | Mockups before building anything visual; the build follows the approved mockup. | In place |
+| W5 | Agentic loop, set up from day one like Aozora Line (Hitoshi's choice): tasks are GitHub issues labelled `task`; one thread per issue opens a small PR; CI (ESLint + headless Playwright tests) must be green. See [docs/WORKFLOW.md](docs/WORKFLOW.md). | In place (#1) |
+| W6 | PRs merge on their own through the merge queue when every check is green on top of `main`, the description has a screenshot and the project review passed, for small PRs only (800 changed lines or fewer, lock files, images and `vendor/` not counted). Bigger PRs, and PRs that change `.github/workflows/`, wait for "m". A `hold` label keeps a PR out. | In place (#1) |
+| W7 | Merges to `main` deploy to GitHub Pages, to **dev** only (`/secret-agent-simulator/dev/`, marked with a "DEV <commit>" tag). "Ship" promotes dev to prod as release `prod-N`; "Rollback" (or "Rollback to prod-N") puts prod back in about a minute. Both sites stay fresh on phones without a hard refresh, and a live check verifies each deploy. | In place (#1) |
+| W8 | After every shipped change, share the latest dev link with a cache-busting suffix: `https://hitoshi85.github.io/secret-agent-simulator/dev/?v=<short commit>` (prod after "Ship"). | In place |
+| W9 | Keep all requirements and feedback in this file, updated with every change and every piece of feedback: the latest 20 feedback rows (older ones in `docs/feedback-archive.md`), PR numbers instead of placeholders, and a CI test (`tests/requirements.spec.js`) that checks it. | In place (#1) |
+| W10 | With each PR, share a screenshot of the game that highlights the new feature. | In place |
+| W11 | Automatic phone checks on every PR: phone screenshots in portrait (390×844) and landscape (844×390) at the title and each landmark (artifact `phone-screenshots`, plus main's for comparison), and a rendering budget at phone size: at most 250 draw calls and 400k triangles in every view and under 4 ms of game work per frame. (CI renders WebGL in software, so frame times there are reported but not enforced.) | In place (#1) |
+| W12 | Project review: a Claude reviewer reads the diff of each PR and posts a `project-review: PASS/BLOCK <sha>` verdict; the merge queue waits for a PASS. Hitoshi does not review small PRs. Process: `docs/REVIEW.md`. | In place (#1); scheduled run to be set up |
+| W13 | Backlog veto window: tasks Claude proposes get `proposed` and turn `ready` after 36 hours unless vetoed; at most 3 a day; changes to controls, game modes, real places or prod get `needs-yes`. Weekly report on Fridays. Run daily by `.github/workflows/daily.yml`. | In place (#1) |
+| W14 | Use several focused subagents in parallel for independent parts of a task only when it pays off, keeping token use balanced. | Preference |
+| W15 | Show results (e.g. test runs) in simple tables when asked. | Preference |
+
+## 2. Shipped changes
+
+Every merged change is a [merged PR](https://github.com/Hitoshi85/secret-agent-simulator/pulls?q=is%3Apr+is%3Amerged) (titles say what changed,
+numbers link back from this file), and every promotion to prod is a [`prod-N` release](https://github.com/Hitoshi85/secret-agent-simulator/releases)
+with generated notes.
+
+## 3. Feedback log
+
+Newest at the bottom, latest 20 rows only: when a new row would make 21, move the oldest row to
+[docs/feedback-archive.md](docs/feedback-archive.md). "Outcome" says what was done about it.
+
+| Date | Feedback / request from Hitoshi | Outcome |
+|---|---|---|
+| 2026-11-15 | "Build a secret agent simulator that is more cerebral than action based but still has international travel, driving expensive cars, and riding trains. Start with one city (Florence) … 3D … run on a browser on the phone." Review train-simulator first and ask how we work. | Reviewed Aozora Line's setup and asked workflow, then gameplay questions (rows below). R1, R3. |
+| 2026-11-15 | Workflow: clone the train-sim setup from day one; repo `secret-agent-simulator`; Three.js with no build step; all questions and approvals in the project chat, as clickable cards. | W2, W3, W5 to W13, R2; set up in #1. |
+| 2026-11-15 | Gameplay: tradecraft and deduction; stylized hand-built Florence; third person, tap to walk; present day; gadgets and hacking puzzles; drive the hills, walk the centre; the train as a playable scene; Heat and consequences; written case with a random culprit; about 15 minutes in one sitting; mockups then a walkable slice; your own agent. | R3, R6, R8, R11 to R17. |
+| 2026-11-15 | Look mockup v1 (Duomo, Ponte Vecchio at dusk): "More detail first". | Mockup v2: richer facades, life-size people, an agent close-up. |
+| 2026-11-15 | Mockup v2: "Build it as shown". | Built the walkable slice from the Duomo to Ponte Vecchio and Oltrarno in #1 (R2 to R10). |
+
+## 4. Open backlog
+
+Add the `ready` label to an issue to start it.
+
+| Issue | Task | Status |
+|---|---|---|
+| – | Agent designer: name and look (R8) | To file |
+| – | First case in Florence: clues, tails, dead drops, the accusation (R11, R15, R16) | To file |
+
+## 5. Ideas mentioned, not yet requested
+
+- More cities linked by train (R14).
+- Cars to choose and drive in the Tuscan hills (R13).

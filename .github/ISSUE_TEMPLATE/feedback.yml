@@ -1,0 +1,20 @@
+name: Playtest feedback
+description: Something that felt off while playing. Claude turns it into tasks.
+labels: ["feedback"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you saw, and what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Game context
+      description: Filled in by the game's Feedback button (version, where in the city, time of day).
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
