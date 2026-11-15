@@ -89,6 +89,13 @@ function reviewState(comments, sha) {
   return state;
 }
 
+// True when a CI run on the commit will still report: queued or running, and not parked waiting
+// for approval (GitHub holds a pull_request run from github-actions[bot], such as the play-links PR,
+// as action_required with no check run; a workflow_dispatch run needs no approval).
+function ciRunPending(runs) {
+  return (runs || []).some((r) => r.status !== 'completed' && r.conclusion !== 'action_required');
+}
+
 // Sums up the check runs on a commit: 'success', 'pending', 'failure' or 'missing'.
 // Only the newest run of each check counts, so a passing re-run replaces an old failure.
 function checksState(runs) {
@@ -178,9 +185,9 @@ async function run({ github, context, core }) {
     if (state === 'failure') { say(`#${n} has a failing check: skipping until it is fixed.`); continue; }
     if (state === 'missing') {
       const { data: wf } = await github.rest.actions.listWorkflowRuns({
-        owner, repo, workflow_id: CI_WORKFLOW, head_sha: pr.head.sha, per_page: 1,
+        owner, repo, workflow_id: CI_WORKFLOW, head_sha: pr.head.sha, per_page: 20,
       });
-      if (!wf.total_count) {
+      if (!ciRunPending(wf.workflow_runs)) {
         await github.rest.actions.createWorkflowDispatch({ owner, repo, workflow_id: CI_WORKFLOW, ref: pr.head.ref });
         say(`#${n} had no CI run on ${pr.head.sha.slice(0, 7)}: started one.`);
       } else {
@@ -219,5 +226,5 @@ async function run({ github, context, core }) {
 
 module.exports = {
   run, hasScreenshot, changedLines, eligibility, MAX_CHANGED_LINES, checksState, REQUIRED_CHECK, reviewState, docsOnly,
-  playLinksOnly, PLAY_LINKS_BRANCH,
+  playLinksOnly, PLAY_LINKS_BRANCH, ciRunPending,
 };
