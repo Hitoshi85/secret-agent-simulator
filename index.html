@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b1612">
+<title>Secret Agent Simulator · Florence</title>
+<link rel="stylesheet" href="style.css?v=1">
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three-0.187.0/three.module.js",
+  "three/addons/": "./vendor/three-0.187.0/addons/"
+} }
+</script>
+</head>
+<body>
+<canvas id="game" aria-label="Florence in 3D: tap the street to walk there, drag to look around"></canvas>
+<div id="hud">
+  <div class="top">
+    <div id="loc" class="panel"><b id="locName">Piazza del Duomo</b><span id="locSub">Firenze · 17:40</span></div>
+    <div class="right">
+      <div id="heat" class="panel" title="Heat: how much attention you have drawn">HEAT<div class="bar"><i style="width:12%"></i></div></div>
+      <div class="small">
+        <button id="pause" class="chip" type="button" aria-label="Pause">❚❚</button>
+        <button id="feedback" class="chip" type="button" aria-label="Send feedback">💬</button>
+      </div>
+    </div>
+  </div>
+  <div id="hint">Tap the street to walk · drag to look around</div>
+  <div id="toast" role="status"></div>
+  <div id="touch">
+    <button type="button" data-act="phone">📱 Phone</button>
+    <button type="button" data-act="case">🗂 Case board</button>
+    <button type="button" data-act="map">🗺 Map</button>
+  </div>
+  <p class="help">Tap or click to walk · drag to look · W A S D or arrows to walk · Q / E turn · M map · P pause · F feedback</p>
+</div>
+<div id="map" class="overlay" hidden>
+  <div class="sheet">
+    <h2>Florence</h2>
+    <p>Where to?</p>
+    <div id="places"></div>
+    <button type="button" class="close" data-act="map">Close</button>
+  </div>
+</div>
+<div id="paused" class="overlay" hidden><div class="sheet"><h2>Paused</h2><button type="button" data-act="pause">▶ Resume</button></div></div>
+<div id="title" class="overlay">
+  <div class="sheet">
+    <p class="kicker">Secret Agent Simulator</p>
+    <h1>Florence</h1>
+    <p>Your handler says the contact is somewhere between the Duomo and Ponte Vecchio. Walk the city and get a feel for it first.</p>
+    <button type="button" id="start" data-act="start">Begin</button>
+  </div>
+</div>
+<script type="module" src="game.js?v=1"></script>
+</body>
+</html>
