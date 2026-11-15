@@ -22,6 +22,8 @@ const SELF_CHECKS = ['Merge queue'];          // our own job, never wait on it
 const SIZE_IGNORED = [/^package-lock\.json$/, /^docs\/screens\//, /^vendor\//, /\.(png|jpe?g|gif|webp)$/i];
 // GITHUB_TOKEN may not push or merge workflow changes, and those deserve the owner's eyes anyway.
 const OWNER_ONLY = [/^\.github\/workflows\//];
+// The Pages workflow's README play-links update (see the links job in pages.yml): no screenshot, no deploy.
+const PLAY_LINKS_BRANCH = 'bot/play-links';
 
 // Project review: a Claude thread in the project reads each PR's diff and posts a PR comment ending in
 // `<!-- project-review: PASS <head sha> -->` (or BLOCK). Only comments by the owner's account, members
@@ -32,6 +34,11 @@ const REVIEW_BOTS = ['github-actions[bot]'];
 const NO_REVIEW_NEEDED = [/\.md$/i, /^docs\//, /\.(png|jpe?g|gif|webp)$/i];
 
 const BAD = new Set(['failure', 'cancelled', 'timed_out', 'action_required', 'startup_failure', 'stale']);
+
+// True for the Pages workflow's own README update: its branch, and README.md is the only file.
+function playLinksOnly(pr, files) {
+  return pr.head.ref === PLAY_LINKS_BRANCH && files.length > 0 && files.every((f) => f.filename === 'README.md');
+}
 
 // True when the PR description shows at least one image (Markdown or HTML).
 function hasScreenshot(body) {
@@ -55,7 +62,7 @@ function eligibility(pr, files, repoFullName) {
   if (!pr.head.repo || pr.head.repo.full_name !== repoFullName) return { ok: false, reason: 'from a fork' };
   const hold = labels.find((l) => HOLD_LABELS.includes(l));
   if (hold) return { ok: false, reason: `labelled ${hold}` };
-  if (!hasScreenshot(pr.body)) return { ok: false, reason: 'no screenshot in the description' };
+  if (!hasScreenshot(pr.body) && !playLinksOnly(pr, files)) return { ok: false, reason: 'no screenshot in the description' };
   const owner = files.find((f) => OWNER_ONLY.some((re) => re.test(f.filename)));
   if (owner) return { ok: false, reason: `changes ${owner.filename}, so the owner merges it` };
   const lines = changedLines(files);
@@ -199,7 +206,10 @@ async function run({ github, context, core }) {
       await github.rest.git.deleteRef({ owner, repo, ref: `heads/${pr.head.ref}` });
     } catch (e) { say(`Branch not deleted: ${e.message}`); }
     // A merge made with GITHUB_TOKEN does not fire "push", so start the deploy and the next queue run.
-    await github.rest.actions.createWorkflowDispatch({ owner, repo, workflow_id: DEPLOY_WORKFLOW, ref: 'main' });
+    // A play-links update changes nothing on the site, and deploying it would only open another one.
+    if (!playLinksOnly(pr, files)) {
+      await github.rest.actions.createWorkflowDispatch({ owner, repo, workflow_id: DEPLOY_WORKFLOW, ref: 'main' });
+    }
     await github.rest.actions.createWorkflowDispatch({ owner, repo, workflow_id: QUEUE_WORKFLOW, ref: 'main' });
     break;
   }
@@ -209,4 +219,5 @@ async function run({ github, context, core }) {
 
 module.exports = {
   run, hasScreenshot, changedLines, eligibility, MAX_CHANGED_LINES, checksState, REQUIRED_CHECK, reviewState, docsOnly,
+  playLinksOnly, PLAY_LINKS_BRANCH,
 };
