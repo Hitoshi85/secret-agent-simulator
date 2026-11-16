@@ -78,6 +78,7 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 | 2026-11-15 | "Where is the case/mission?" First case cards: "Recover the stolen dossier"; "Witnesses and traces"; "Free accusations, Heat each"; "Wrong guesses only, thief flees"; "Crack the thief's phone". | Case 01 "The Dossier" built from those choices in #6 (R11, R12, R15, R16). |
 | 2026-11-15 | "Keep cases as separate code so it's easy to swap/edit cases." | Each case is a data file in `src/cases/`, run by the engine in `src/case/` (R18), #6. |
 | 2026-11-15 | Case mockup (five phone screens): "Build it as shown". | Saved as docs/mockups/case-01-dossier.png and built in #6. |
+| 2026-11-16 | The README bot PRs got stuck behind GitHub's approval for runs from the bot and blocked the queue. Chose "Queue approves its own". | The merge queue approves the held CI run only on `bot/play-links` README-only PRs, and skips a PR it cannot merge instead of stopping; #10. |
 
 ## 4. Open backlog
 

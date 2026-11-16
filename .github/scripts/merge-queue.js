@@ -89,6 +89,11 @@ function reviewState(comments, sha) {
   return state;
 }
 
+// CI runs on a commit that GitHub holds for approval.
+function parkedRuns(runs) {
+  return (runs || []).filter((r) => r.conclusion === 'action_required' || r.status === 'action_required');
+}
+
 // True when a CI run on the commit will still report: queued or running, and not parked waiting
 // for approval (GitHub holds a pull_request run from github-actions[bot], such as the play-links PR,
 // as action_required with no check run; a workflow_dispatch run needs no approval).
@@ -133,6 +138,23 @@ async function run({ github, context, core }) {
 
     const labels = pr.labels.map((l) => l.name);
     if (labels.includes(CONFLICT_LABEL)) { say(`#${n} skipped: ${CONFLICT_LABEL} (fix and remove the label)`); continue; }
+
+    // 0. GitHub parks CI on PRs opened by github-actions[bot] until someone approves the run, and main's
+    //    rules never see the required check until it runs. The queue approves that run, but only on
+    //    the Pages workflow's own README play-links PRs (owner's choice, 2026-11-16).
+    if (playLinksOnly(pr, files)) {
+      const { data: wf } = await github.rest.actions.listWorkflowRuns({
+        owner, repo, workflow_id: CI_WORKFLOW, head_sha: pr.head.sha, per_page: 20,
+      });
+      const parked = parkedRuns(wf.workflow_runs);
+      if (parked.length) {
+        try {
+          for (const r of parked) await github.rest.actions.approveWorkflowRun({ owner, repo, run_id: r.id });
+          say(`#${n}: approved its parked CI run. Waiting for it.`);
+          break;
+        } catch (e) { say(`#${n}: could not approve its CI run (${e.message}). Skipping it.`); continue; }
+      }
+    }
 
     // 1. Make sure it is tested on top of the current main.
     const { data: cmp } = await github.rest.repos.compareCommitsWithBasehead({
@@ -199,10 +221,16 @@ async function run({ github, context, core }) {
 
     // 3. Green, current and eligible: merge it.
     if (pr.mergeable === false) { say(`#${n}: GitHub reports it cannot merge. Skipping.`); continue; }
-    await github.rest.pulls.merge({
-      owner, repo, pull_number: n, sha: pr.head.sha, merge_method: 'squash',
-      commit_title: `${pr.title} (#${n})`,
-    });
+    try {
+      await github.rest.pulls.merge({
+        owner, repo, pull_number: n, sha: pr.head.sha, merge_method: 'squash',
+        commit_title: `${pr.title} (#${n})`,
+      });
+    } catch (e) { // one PR that can't merge must not stop the PRs behind it
+      say(`#${n} could not be merged: ${e.message.split('\n')[0]}. Skipping it.`);
+      summary.push(`#${n}: merge refused (${e.message.split('\n')[0]})`);
+      continue;
+    }
     say(`#${n} merged.`);
     await github.rest.issues.createComment({
       owner, repo, issue_number: n,
@@ -226,5 +254,5 @@ async function run({ github, context, core }) {
 
 module.exports = {
   run, hasScreenshot, changedLines, eligibility, MAX_CHANGED_LINES, checksState, REQUIRED_CHECK, reviewState, docsOnly,
-  playLinksOnly, PLAY_LINKS_BRANCH, ciRunPending,
+  playLinksOnly, PLAY_LINKS_BRANCH, ciRunPending, parkedRuns,
 };

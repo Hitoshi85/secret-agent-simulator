@@ -36,7 +36,7 @@
    shows a newer deploy, so phones get the latest version without a hard refresh. Then **verify-live** checks both live sites serve the right commit
    and that the game starts. The **links** job then updates the version labels next to the prod and dev links at the top of
    `README.md` (as a small `bot/play-links` PR that the merge queue merges, since `main` only takes PRs;
-   it needs no screenshot, review or deploy) and comments the dev link (with `?v=<short-sha>`) on the merged PR.
+   it needs no screenshot, review or deploy; GitHub holds CI on PRs from the bot until approved, so the queue approves that run, only on these README-only PRs) and comments the dev link (with `?v=<short-sha>`) on the merged PR.
    - **Ship:** when the owner types "Ship", Claude runs the workflow with action `ship` (Actions →
      Deploy to GitHub Pages → Run workflow). It tags the commit dev serves as the next `prod-N`,
      publishes a GitHub release with notes since the last one, and moves the `prod` tag.
