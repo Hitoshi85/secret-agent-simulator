@@ -12,6 +12,7 @@ import { makeCrowd, updateCrowd } from './src/people/crowd.js';
 import { setupUI, showLocation, toast, show } from './src/ui.js';
 import { pickCase } from './src/cases/index.js';
 import { makeCaseView } from './src/case/view.js';
+import { makeNavaids } from './src/navaids.js';
 
 const VERSION = new URL(import.meta.url).searchParams.get('v') || 'local';
 const REPO = 'https://github.com/hitoshi85/secret-agent-simulator';
@@ -31,6 +32,7 @@ const caseView = makeCaseView({ scene, crowd, def: pickCase(params.get('case')) 
 caseView.toast = toast;
 document.getElementById('locSub').textContent = `Firenze · ${caseView.def.time} · train ${caseView.def.train}`;
 let pending = null; // a case person or thing the agent is walking up to
+const navaids = makeNavaids({ caseView, agent, cam });
 
 // Tap marker: a ring that pulses where the agent is heading.
 const marker = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.65, 32), new THREE.MeshBasicMaterial({ color: '#f2c14e', transparent: true, opacity: 0, depthWrite: false }));
@@ -46,32 +48,32 @@ function resize() {
 addEventListener('resize', resize); resize();
 
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
-function onTap(px, py) {
+function onTap(px, py, run = false) {
   if (state.state !== 'playing' || state.paused || state.map || caseView.sheetOpen()) return;
   const r = canvas.getBoundingClientRect();
   ndc.set(((px - r.left) / r.width) * 2 - 1, -((py - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
   const t = caseView.pick(ray);
-  if (t) return approach(t);
+  if (t) return approach(t, run);
   if (!ray.ray.intersectPlane(groundPlane, hit)) return;
-  act('walkTo', hit.x, hit.z);
+  act('walkTo', hit.x, hit.z, run);
 }
 
 // Tapped a witness, trace or suspect: act at once when close, otherwise walk up to them first.
-function approach(t) {
+function approach(t, run = false) {
   const [x, z] = caseView.where(t);
   if (Math.hypot(x - agent.x, z - agent.z) <= REACH) { pending = null; agent.path = null; return caseView.interact(t); }
-  if (!act('walkTo', x, z)) return null;
+  if (!act('walkTo', x, z, run)) return null;
   pending = t; return 'walking';
 }
 
-function act(action, a, b) {
+function act(action, a, b, c) {
   switch (action) {
     case 'start': if (state.state === 'title') { state.state = 'playing'; show('title', false); caseView.caseFile(); } return true;
     case 'walkTo': {
       if (state.state !== 'playing') return false;
       pending = null; caseView.hideTalk();
-      const ok = walkTo(agent, a, b);
+      const ok = walkTo(agent, a, b, c);
       stats.lastWalkFound = ok;
       if (ok) { document.getElementById('hint').classList.add('done'); const end = agent.path[agent.path.length - 1]; marker.position.set(end[0], 0.04, end[1]); marker.material.opacity = 1; }
       else toast('You can’t get there from here');
@@ -82,7 +84,7 @@ function act(action, a, b) {
       teleport(agent, p.at, p.face); cam.yaw = agent.heading; cam.pitch = p.pitch ?? -0.05; state.map = false; show('map', false);
       updateCamera(camera, agent, 0, state.clock, true); toast(p.name); return true;
     }
-    case 'map': state.map = !state.map; show('map', state.map); return state.map;
+    case 'map': state.map = !state.map; show('map', state.map); if (state.map) navaids.drawBig(); return state.map;
     case 'pause': {
       if (state.state !== 'playing') return false;
       state.paused = a === 'auto' ? true : !state.paused;
@@ -93,6 +95,7 @@ function act(action, a, b) {
     case 'phone': if (state.state !== 'playing') return false; if (!caseView.phone()) toast('No messages from your handler'); return true;
     case 'notebook': if (state.state !== 'playing') return false; caseView.notebook(); return true;
     case 'close': caseView.close(); return true;
+    case 'briefed': if (caseView.def.handler) caseView.handler(); else caseView.close(); return true;
     case 'accuse': return caseView.accuse(a);
     case 'dot': return caseView.dot(a);
     case 'again': caseView.reset(); teleport(agent, START.at, START.face); cam.yaw = agent.heading; cam.pitch = START.pitch; caseView.caseFile(); return true;
@@ -120,6 +123,7 @@ document.addEventListener('click', (e) => {
   if (k === 'talk') caseView.hideTalk(); else act(k, Number(b.dataset.suspect));
 });
 
+const runPill = document.getElementById('run');
 const readKeys = setupUI({ canvas, act, onTap, onDrag: (dx, dy) => { cam.yaw -= dx * 0.006; cam.pitch = Math.max(PITCH[0], Math.min(PITCH[1], cam.pitch + dy * 0.004)); cam.lastDrag = state.clock; } });
 
 // Advances the simulation by dt seconds (does nothing while paused or on the title).
@@ -134,13 +138,15 @@ function step(dt) {
     dir = [fx * k.forward - fz * k.right, fz * k.forward + fx * k.right];
   }
   if (dir) pending = null;
-  updateAgent(agent, dt, dir);
+  updateAgent(agent, dt, dir, k.run);
   if (pending && !agent.path) { // arrived: talk to them, or say they moved on
     const t = pending; pending = null; const [x, z] = caseView.where(t);
     if (Math.hypot(x - agent.x, z - agent.z) <= REACH + 2) caseView.interact(t); else toast('They moved on. Tap them again');
   }
   if (!agent.path) marker.material.opacity = Math.max(0, marker.material.opacity - dt * 2);
   updateCrowd(crowd, dt);
+  navaids.update(dt, innerWidth, innerHeight);
+  runPill.classList.toggle('on', agent.running && agent.walking);
   updateCamera(camera, agent, dt, state.clock);
   const area = areaAt(agent.x, agent.z);
   if (area && area !== state.area) { state.area = area; showLocation(area); }
@@ -170,7 +176,7 @@ requestAnimationFrame(frame);
 // Test hook (see CLAUDE.md). Keep it working when refactoring; add to it for new features.
 window.__agent = {
   state, stats, agent, crowd, act, step, render, cam, PLACES,
-  get case() { return caseView.c; }, caseView,
+  get case() { return caseView.c; }, caseView, navaids,
   get paused() { return loop.paused; }, set paused(v) { loop.paused = v; last = performance.now(); },
   setPaused(v) { if (!!v !== state.paused) act('pause'); },
   walkable, findPath, areaAt, version: VERSION,

@@ -65,7 +65,14 @@ test('the case file opens the case, and every witness and trace stands on a stre
   const errors = await open(page);
   await expect(page.locator('#caseBody h1')).toHaveText('The Dossier');
   await page.locator('#caseBody button', { hasText: 'Take the case' }).click();
+  // The handler's first lead comes in on the Phone, and the Phone shows it again later.
+  await expect(page.locator('#caseBody .kicker')).toHaveText('Phone · Handler');
+  await expect(page.locator('#caseBody .msg').first()).toContainText('Start at the Duomo');
+  await page.locator('#caseBody button', { hasText: 'Got it' }).click();
   await expect(page.locator('#casesheet')).toBeHidden();
+  await page.locator('#touch [data-act="phone"]').click();
+  await expect(page.locator('#caseBody .kicker')).toHaveText('Phone · Handler');
+  await page.locator('#caseBody button', { hasText: 'Got it' }).click();
   await expect(page.locator('#locSub')).toHaveText('Firenze · 17:40 · train 19:10');
   const off = await page.evaluate(() => window.__agent.caseView.targets.filter((t) => t.kind !== 'suspect' && !window.__agent.walkable(...t.at)).map((t) => t.id));
   expect(off).toEqual([]);

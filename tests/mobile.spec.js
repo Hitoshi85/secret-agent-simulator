@@ -14,8 +14,8 @@ const ready = (page) => page.waitForFunction(() => window.__agent && window.__ag
 
 // The case file opens after Begin (on builds that have cases): take the case like a player would.
 async function takeCase(page) {
-  const sheet = page.locator('#casesheet');
-  if (await sheet.count() && await sheet.isVisible()) await page.tap('#caseBody button[data-case="close"]');
+  const sheet = page.locator('#casesheet'); // the case file, then (on newer builds) the handler's message
+  for (let i = 0; i < 3 && await sheet.count() && await sheet.isVisible(); i++) await page.tap('#caseBody button >> nth=0');
 }
 
 for (const [site, url] of SITES)
