@@ -22,10 +22,10 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 | R3 | Starts with one city, Florence, in 3D that looks and feels like Florence: a stylized, hand-built, original low-poly city with painted textures (Hitoshi's choice, mockup v2). The first slice runs from Piazza del Duomo down Via dei Calzaiuoli to Piazza della Signoria, along Via Por Santa Maria to the Arno, over Ponte Vecchio and into Oltrarno (Via de' Guicciardini to Piazza de' Pitti). | Done (#1) |
 | R4 | Landmarks modelled by hand: the Duomo with its ribbed dome and lantern, the striped marble walls and the west front, Giotto's campanile, the Baptistery, Palazzo Vecchio with its tower, the Loggia, the Neptune fountain, the Arno with its embankments, Ponte Vecchio with overhanging shops and the Vasari corridor, and the Oltrarno hills with cypresses and San Miniato. | Done (#1) |
 | R5 | Ordinary streets lined with three- and four-storey palazzi: rusticated ground floors with arched doors and shops, arched windows in stone surrounds, green louvred shutters, flower boxes, deep eaves on dark soffits and terracotta hip roofs. | Done (#1) |
-| R6 | Third person, tap to walk (Hitoshi's choice): the camera follows behind the agent; a tap on the street walks there along the streets (pathfinding, never through buildings or the river; a tap on a building or the water walks to the nearest street); dragging turns the camera and tilts it up to the domes; the camera swings back behind the agent while walking and pulls in when a building is in the way. Keyboard: W A S D or arrows, Q / E to turn. | Done (#1) |
+| R6 | Third person, tap to walk (Hitoshi's choice): the camera follows behind the agent; a tap on the street walks there along the streets (pathfinding, never through buildings or the river; a tap on a building or the water walks to the nearest street); dragging turns the camera and tilts it up to the domes; the camera swings back behind the agent while walking and pulls in when a building is in the way. A double tap runs there at twice the speed (Hitoshi's choice, 2026-11-16). Keyboard: W A S D or arrows, Shift to run, Q / E to turn. | Done (#1, #12) |
 | R7 | People about 1.75 m tall with walking poses, faces, varied clothes, skirts, coats, hats and bags; a crowd of about 70 strolls the streets and piazzas. | Done (#1) |
 | R8 | The player's own agent (Hitoshi's choice): a name and look picked at the start and kept across cities. Until that screen exists the agent wears a placeholder charcoal suit, tie and sunglasses, with a blue ring underfoot. | Placeholder (#1) |
-| R9 | HUD on the phone: the current place (it changes as you walk), the time, a Heat meter, and Phone, Notebook and Map buttons (N opens the Notebook); Map jumps to Piazza del Duomo, Via dei Calzaiuoli, Piazza della Signoria, Ponte Vecchio and Oltrarno. The Phone opens gadget puzzles once you hold one. | Done (#1, #6) |
+| R9 | HUD on the phone: the current place (it changes as you walk), the time, a Heat meter, and Phone, Notebook and Map buttons (N opens the Notebook); Map jumps to Piazza del Duomo, Via dei Calzaiuoli, Piazza della Signoria, Ponte Vecchio and Oltrarno. The Phone opens gadget puzzles once you hold one, otherwise the handler's messages. A round minimap (north up, leads in gold) sits in the corner; the Map shows a drawn map of the whole slice with you and the leads, plus the jump buttons (Hitoshi's choice, 2026-11-16). | Done (#1, #6, #12) |
 | R10 | Pause with the ❚❚ button, P or Esc; switching tabs or apps pauses. Players send feedback with the 💬 button (or F): it pauses and opens a prefilled GitHub feedback issue with the game's context (version, where in the city, time). | Done (#1) |
 | R11 | Gameplay: tradecraft and deduction (Hitoshi's choice): gather clues around the city, read people and documents, spot and shake tails, use dead drops, and work out who did it; cars and trains move you between leads. First case, "The Dossier" (Hitoshi's choices, 2026-11-15): a courier's dossier was lifted under the Loggia; witnesses and traces around the centre narrow five suspects in the crowd to the thief; tap the thief to recover it. | In progress (#5, #6) |
 | R12 | Present day (Hitoshi's choice), with gadgets and hacking as logic-puzzle minigames (hacking CCTV, cloning phones, drone surveillance), kept cerebral. First one: crack the thief's dropped phone with a 3 x 3 unlock pattern, 3 tries. | In progress (#6) |
@@ -35,6 +35,7 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 | R16 | The Florence case is hand written, with the culprit reshuffled each playthrough so it stays fair and replayable; an automatic playtest checks every shuffle is solvable (Hitoshi's choice). Each decoy suspect differs from the thief in one trait, so the firm clues always leave only the thief. | Done (#6) |
 | R17 | One case takes about 15 minutes in one sitting (Hitoshi's choice). | Planned |
 | R18 | Cases are separate code, easy to swap and edit (Hitoshi's requirement, 2026-11-15): each case is one data file in `src/cases/` (text, traits, witnesses, traces, places), run by the shared engine in `src/case/`; `?case=<id>` picks one. | Done (#6) |
+| R19 | Finding leads without aimless walking (Hitoshi's feedback, 2026-11-16): gold arrows at the screen edge point to witnesses and traces not visited yet, showing only the distance, never who or what is there; and when you take the case, your handler's first lead arrives on the Phone. | Done (#12) |
 
 ### How we work
 
@@ -55,6 +56,7 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 | W13 | Backlog veto window: tasks Claude proposes get `proposed` and turn `ready` after 36 hours unless vetoed; at most 3 a day; changes to controls, game modes, real places or prod get `needs-yes`. Weekly report on Fridays. Run daily by `.github/workflows/daily.yml`. | In place (#1) |
 | W14 | Use several focused subagents in parallel for independent parts of a task only when it pays off, keeping token use balanced. | Preference |
 | W15 | Show results (e.g. test runs) in simple tables when asked. | Preference |
+| W16 | Every update says what the work is waiting on: Hitoshi, Claude or GitHub (Hitoshi's rule, 2026-11-16). Options always come as selectable cards. | In place |
 
 ## 2. Shipped changes
 
@@ -79,6 +81,9 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 | 2026-11-15 | "Keep cases as separate code so it's easy to swap/edit cases." | Each case is a data file in `src/cases/`, run by the engine in `src/case/` (R18), #6. |
 | 2026-11-15 | Case mockup (five phone screens): "Build it as shown". | Saved as docs/mockups/case-01-dossier.png and built in #6. |
 | 2026-11-16 | The README bot PRs got stuck behind GitHub's approval for runs from the bot and blocked the queue. Chose "Queue approves its own". | The merge queue approves the held CI run only on `bot/play-links` README-only PRs, and skips a PR it cannot merge instead of stopping; #10. |
+| 2026-11-16 | Played The Dossier: "feels slow with a lot of aimless walking"; wants running, a hint or direction to witnesses and objects, and a map of the game world; open to other ideas. Cards: "Double-tap to run", "Edge arrows with distance", "Corner minimap plus big map", "Handler's first lead". | Built in #12 (R6, R9, R19), issue #11. |
+| 2026-11-16 | Pacing mockup: "Don't show who the people are on the left screen but still show the direction and distance." | Arrows show only direction and distance (R19), #12. |
+| 2026-11-16 | "Always show options as selectable cards." "Always tell me who/what we are waiting on: me, you, or GitHub." | W16. |
 
 ## 4. Open backlog
 
@@ -87,7 +92,8 @@ Add the `ready` label to an issue to start it.
 | Issue | Task | Status |
 |---|---|---|
 | – | Agent designer: name and look (R8) | To file |
-| #5 | First case: recover the stolen dossier (R11, R12, R15, R16, R18) | In progress (#6) |
+| #5 | First case: recover the stolen dossier (R11, R12, R15, R16, R18) | Done (#6, #7) |
+| #11 | Speed up the dossier case: running, lead arrows, maps, handler's first lead (R6, R9, R19) | In progress (#12) |
 | – | Station chase when the thief gets away (R14, R15) | To file |
 
 ## 5. Ideas mentioned, not yet requested

@@ -28,6 +28,8 @@ folder and point the import map at it. No bundler.
 | `src/camera.js` | Third-person follow camera: yaw and pitch from drags, swing behind while walking, pull-in near walls |
 | `src/scene.js` | Renderer, light, shadows following the agent, sky, fog and ground |
 | `src/ui.js` | HUD, buttons, taps and drags on the canvas, keys, toasts |
+| `src/mapdraw.js` | The city drawn from above on a 2D canvas (blocks, streets, river, landmarks, labels), pins and the agent's arrow |
+| `src/navaids.js` | Edge arrows to unvisited leads (distance only), the corner minimap and the big Map |
 | `src/cases/*.js` | One data file per case (text, traits, witnesses, traces, places); `src/cases/index.js` lists them, `?case=<id>` picks one |
 | `src/case/engine.js` | Case rules shared by every case, no 3D or page code: random thief, one-trait decoys, clues, the phone pattern, accusations, Heat |
 | `src/case/view.js` | A case in the city and on screen: witnesses, traces and suspects to tap, the case file, talk card, Notebook, phone puzzle, endings |
@@ -80,8 +82,8 @@ checked by `tests/phone-checks.spec.js` (250 draw calls, 400k triangles, 4 ms of
 `game.js` exposes `window.__agent` for tests: `state` (`state` title/playing, `paused`, `map`, `area`, `clock`),
 `stats` (`frames`, `calls` and `triangles` of the last render, `people`, `buildings`, `lastWalkFound`),
 `agent` (`x`, `z`, `heading`, `path`, `walking`, `walked`), `crowd` (each `mesh`), `cam` (`yaw`, `pitch`),
-`act(action, ...)` (`start`, `walkTo` x z, `jump` place-id, `map`, `pause`, `phone`, `notebook`, `close`, `interact` kind id, `accuse` suspect-id, `dot` 0-8, `again`, `feedback`, `turn` radians),
-`case` (the running case: `suspects`, `thief`, `notes`, `heat`, `status`), `caseView` (its `targets`),
+`act(action, ...)` (`start`, `walkTo` x z run, `jump` place-id, `map`, `pause`, `phone`, `notebook`, `close`, `briefed` (case file taken: the handler's lead), `interact` kind id, `accuse` suspect-id, `dot` 0-8, `again`, `feedback`, `turn` radians),
+`case` (the running case: `suspects`, `thief`, `notes`, `heat`, `status`), `caseView` (its `targets`, `leads()`), `navaids` (`leads`: each open lead's `id`, `d` metres, `ahead`),
 `step(dt)` (advance the simulation; does nothing while paused, on the title or with the Map open), `render()`,
 `paused` (set true to stop the real-time loop and drive frames from the test), `setPaused(bool)` (player pause),
 `PLACES`, `walkable(x, z)`, `findPath(ax, az, bx, bz)`, `areaAt(x, z)`, `version`.

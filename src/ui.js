@@ -12,6 +12,7 @@ export function toast(text) {
 export function showLocation(name) { if ($('locName').textContent !== name) $('locName').textContent = name; }
 
 export function setupUI({ canvas, act, onTap, onDrag }) {
+  let lastTap = null; // a second tap close by within 350 ms is a double tap: run there
   for (const p of PLACES) {
     const b = document.createElement('button'); b.type = 'button'; b.textContent = p.name; b.dataset.act = 'jump'; b.dataset.place = p.id;
     $('places').appendChild(b);
@@ -32,7 +33,12 @@ export function setupUI({ canvas, act, onTap, onDrag }) {
     if (down.dragged) { onDrag(e.clientX - down.lastX, e.clientY - down.lastY); down.lastX = e.clientX; down.lastY = e.clientY; }
   });
   canvas.addEventListener('pointerup', (e) => {
-    if (down && !down.dragged) onTap(e.clientX, e.clientY);
+    if (down && !down.dragged) {
+      const now = performance.now();
+      const run = !!lastTap && now - lastTap.t < 350 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 40;
+      lastTap = run ? null : { t: now, x: e.clientX, y: e.clientY };
+      onTap(e.clientX, e.clientY, run);
+    }
     down = null;
   });
   canvas.addEventListener('pointercancel', () => { down = null; });
@@ -57,6 +63,7 @@ export function setupUI({ canvas, act, onTap, onDrag }) {
     forward: (keys.has('w') || keys.has('arrowup') ? 1 : 0) - (keys.has('s') || keys.has('arrowdown') ? 1 : 0),
     right: (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0),
     turn: (keys.has('e') ? 1 : 0) - (keys.has('q') ? 1 : 0),
+    run: keys.has('shift'),
   });
 }
 

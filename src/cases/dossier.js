@@ -13,6 +13,11 @@ export default {
     'Whoever took it is still in the centre and will leave on the 19:10 from Santa Maria Novella.',
     '<b>Your job:</b> find who took it and get it back, quietly.',
   ],
+  // The handler's first lead, on the Phone when you take the case.
+  handler: [
+    'Start at the Duomo. A flower seller works the east end of the piazza and sees everyone who comes up from the Loggia.',
+    'Then the Signoria. Our courier says a painter sets up by the palazzo every afternoon.',
+  ],
   tasks: ['Talk to witnesses around the city', 'Look for traces they left', 'Accuse in the crowd. Each wrong guess raises Heat'],
 
   // What tells the suspects apart. Each value says how it looks on a person (see randomLook).

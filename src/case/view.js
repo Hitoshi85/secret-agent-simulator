@@ -95,7 +95,15 @@ export function makeCaseView({ scene, crowd, def, random = Math.random }) {
   v.caseFile = () => open(`<div class="stamp">CASE ${esc(def.number)}</div><p class="kicker">Firenze · ${esc(def.time)}</p>
     <h1>${esc(def.title)}</h1>${def.briefing.map((p) => `<p>${p}</p>`).join('')}
     <ul>${def.tasks.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
-    <button type="button" data-case="close">Take the case</button>`, 'file');
+    <button type="button" data-case="briefed">Take the case</button>`, 'file');
+
+  // Your handler's first lead: shown when you take the case, and again from the Phone.
+  v.handler = () => open(`<p class="kicker">Phone · Handler</p>${(def.handler || []).map((m) => `<p class="msg">${m}</p>`).join('')}
+    <p class="small">The places are marked with gold arrows and on your map.</p>
+    <button type="button" class="close" data-case="close">Got it</button>`, 'gadget');
+
+  // Witnesses and traces not visited yet (the arrows and maps point to these).
+  v.leads = () => v.targets.filter((t) => t.kind !== 'suspect' && t.mesh.visible && !(t.kind === 'witness' && v.c.found.includes(t.id)));
 
   v.notebook = () => {
     const c = v.c;
@@ -146,7 +154,7 @@ export function makeCaseView({ scene, crowd, def, random = Math.random }) {
 
   // The phone gadget: a 3 x 3 unlock pattern. Smudges show which dots; tap them in order.
   v.phone = () => {
-    const id = v.c.picked[0]; if (!id) return false;
+    const id = v.c.picked[0]; if (!id) { if (!def.handler) return false; v.handler(); return true; }
     const clue = def.clues.find((k) => k.id === id);
     v.gadget = id; v.order = [];
     open(`<p class="kicker">Gadget · unlock</p><h2>${esc(clue.what)}</h2>
