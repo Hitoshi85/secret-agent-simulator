@@ -76,6 +76,12 @@ test('a CI run parked for approval does not count as queued', () => {
   expect(q.ciRunPending([{ status: 'completed', conclusion: 'cancelled' }])).toBe(false);
 });
 
+test('CI runs held for approval are found', () => {
+  expect(q.parkedRuns([{ id: 1, status: 'completed', conclusion: 'action_required' }, { id: 2, status: 'completed', conclusion: 'success' }]).map((r) => r.id)).toEqual([1]);
+  expect(q.parkedRuns([{ id: 3, status: 'action_required', conclusion: null }]).map((r) => r.id)).toEqual([3]);
+  expect(q.parkedRuns(undefined)).toEqual([]);
+});
+
 test('project review verdicts', () => {
   const sha = 'abc1234def5678abc1234def5678abc1234def56';
   const c = (body, author_association = 'OWNER', login = 'Hitoshi85') => ({ body, author_association, user: { login } });
