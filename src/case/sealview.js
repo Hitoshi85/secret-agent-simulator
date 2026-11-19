@@ -157,7 +157,7 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
     const r = answer(v.c, s.id, value); hud();
     if (r === 'right') { saveSeen(seen); for (const t of v.targets) { if (t.id === s.id) t.mesh.children[1].material = STONE_MAT; if (t.kind === 'ledger' && v.c.known) t.mesh.visible = t.ring.visible = true; } }
     if (r === 'lost') ending();
-    else render(s, r === 'wrong' ? `Not right. Heat ${v.c.heat} / ${def.maxHeat}: the rivals are closer. Try again.` : r === 'incomplete' ? 'Fill every slot first. No Heat for that.' : '');
+    else render(s, r === 'wrong' ? `Not right. Heat ${v.c.heat} / ${def.maxHeat}: the rivals are closer. Try again.` : r === 'incomplete' ? (s.q.format === 'choice' ? 'Already ruled out. No Heat for that.' : 'Fill every slot first. No Heat for that.') : '');
     return r;
   };
   const submit = () => {
