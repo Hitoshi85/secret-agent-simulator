@@ -72,6 +72,7 @@ test('the compass case plays end to end: any order, Heat, guess at four seals, t
     const ledger = v.targets.find((t) => t.kind === 'ledger');
     out.ledger = ledger.mesh.visible && v.leads().includes(ledger);
     out.end = v.interact(ledger); out.status = c.status;
+    v.ask(c.seals[0].id); A.act('again'); out.fresh = v.cur === null; // a new play never reuses the last play's input
     out.seen = JSON.parse(localStorage.getItem('compass-seen')).length;
     return out;
   });
@@ -84,6 +85,7 @@ test('the compass case plays end to end: any order, Heat, guess at four seals, t
   expect(r.guess).toBe('right'); expect(r.ledger).toBe(true);
   expect(r.end).toBe('won'); expect(r.status).toBe('won');
   expect(r.seen).toBe(4);
+  expect(r.fresh).toBe(true);
   await expect(page.locator('#caseBody')).toContainText('The ledger is yours');
   expect(errors).toEqual([]);
 });

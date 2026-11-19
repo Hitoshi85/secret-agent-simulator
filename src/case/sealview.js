@@ -32,7 +32,7 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
 
   const place = (t, [x, z]) => { t.at = [x, z]; t.mesh.position.x = x; t.mesh.position.z = z; t.ring.position.x = x; t.ring.position.z = z; if (t.kind === 'ledger') t.mesh.position.y = 0.06; };
   v.reset = () => {
-    v.c = newSealCase(def, random, seen);
+    v.c = newSealCase(def, random, seen); v.cur = null; v.guessing = false; // a new play starts with fresh input
     for (const t of v.targets) {
       if (t.kind === 'seal') { place(t, v.c.seals.find((s) => s.id === t.id).site.at); t.mesh.visible = t.ring.visible = true; } else { place(t, v.c.word.at); t.mesh.visible = t.ring.visible = false; }
     }
