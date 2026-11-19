@@ -67,8 +67,7 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
     <button type="button" data-case="briefed">Take the case</button>`, 'file');
   v.handler = () => open(`<p class="kicker">Phone · Handler</p>${def.handler.map((m) => `<p class="msg">${m}</p>`).join('')}
     <button type="button" class="close" data-case="close">Got it</button>`, 'gadget');
-  v.phone = () => { v.handler(); return true; };
-  v.accuse = () => null; v.dot = () => null;
+  v.phone = () => { v.handler(); return true; }; v.accuse = () => null; v.dot = () => null;
 
   // The seal board: every seal, its place or format, and the hidden word so far.
   const slotsHtml = () => `<div class="slotline">${letters(v.c).map((ch) => `<span>${ch}</span>`).join('')}</div>`;
@@ -161,10 +160,7 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
     else render(s, r === 'wrong' ? `Not right. Heat ${v.c.heat} / ${def.maxHeat}: the rivals are closer. Try again.` : '');
     return r;
   };
-  const submit = () => {
-    const q = seal(v.cur).q;
-    return v.answer(q.format === 'match' ? v.input.pairs : v.input);
-  };
+  const submit = () => v.answer(seal(v.cur).q.format === 'match' ? v.input.pairs : v.input);
 
   v.guessSheet = (msg = '') => {
     if (!canGuess(v.c)) return v.notebook();
@@ -239,7 +235,7 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
     $('heatN').textContent = `${v.c.heat} / ${def.maxHeat}`;
     $('locSub').textContent = `Firenze · ${def.time} · broken ${brokenCount(v.c)} of ${v.c.seals.length}`;
   }
-  v.toast = () => {};
+  v.toast = () => {}; // game.js plugs in the HUD toast
   v.reset();
   return v;
 }
