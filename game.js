@@ -12,6 +12,7 @@ import { makeCrowd, updateCrowd } from './src/people/crowd.js';
 import { setupUI, showLocation, toast, show } from './src/ui.js';
 import { pickCase } from './src/cases/index.js';
 import { makeCaseView } from './src/case/view.js';
+import { makeSealView } from './src/case/sealview.js';
 import { makeNavaids } from './src/navaids.js';
 
 const VERSION = new URL(import.meta.url).searchParams.get('v') || 'local';
@@ -28,9 +29,10 @@ scene.add(city, buildLandmarks());
 const agent = makeAgent(scene, START.at, START.face);
 const crowd = makeCrowd(scene, CROWD);
 const params = new URL(location.href).searchParams;
-const caseView = makeCaseView({ scene, crowd, def: pickCase(params.get('case')) });
+const def = pickCase(params.get('case'));
+const caseView = def.kind === 'seals' ? makeSealView({ scene, def, agent }) : makeCaseView({ scene, crowd, def });
 caseView.toast = toast;
-document.getElementById('locSub').textContent = `Firenze · ${caseView.def.time} · train ${caseView.def.train}`;
+if (def.train) document.getElementById('locSub').textContent = `Firenze · ${def.time} · train ${def.train}`;
 let pending = null; // a case person or thing the agent is walking up to
 const navaids = makeNavaids({ caseView, agent, cam });
 
@@ -98,11 +100,13 @@ function act(action, a, b, c) {
     case 'briefed': if (caseView.def.handler) caseView.handler(); else caseView.close(); return true;
     case 'accuse': return caseView.accuse(a);
     case 'dot': return caseView.dot(a);
+    case 'answer': return caseView.answer ? caseView.answer(a) : null; // seal cases: answer the open question
+    case 'guess': return caseView.guess ? caseView.guess(a) : null;
     case 'again': caseView.reset(); teleport(agent, START.at, START.face); cam.yaw = agent.heading; cam.pitch = START.pitch; caseView.caseFile(); return true;
     case 'interact': { const t = caseView.targets.find((q) => q.kind === a && String(q.id) === String(b)); return t ? approach(t) : null; }
     case 'feedback': {
       if (state.state === 'playing' && !state.paused) act('pause');
-      const context = [`Game version: ${VERSION}`, `Where: ${state.area || 'between places'} (x ${agent.x.toFixed(0)}, z ${agent.z.toFixed(0)})`, 'Time of day: 17:40'].join('\n');
+      const context = [`Game version: ${VERSION}`, `Where: ${state.area || 'between places'} (x ${agent.x.toFixed(0)}, z ${agent.z.toFixed(0)})`, `Case: ${def.id}`, `Time of day: ${def.time}`].join('\n');
       const device = `${innerWidth}x${innerHeight} @${devicePixelRatio}x · ${navigator.userAgent}`;
       const u = new URL(`${REPO}/issues/new`);
       u.searchParams.set('template', 'feedback.yml'); u.searchParams.set('labels', 'feedback');

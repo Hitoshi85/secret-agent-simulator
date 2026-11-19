@@ -8,8 +8,8 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 - **Play dev (latest main):** https://hitoshi85.github.io/secret-agent-simulator/dev/ (add `?v=<short commit>`
   on a phone to skip a cached copy; the current links with that suffix are always in [README.md](README.md))
 - **Backlog:** [open issues](https://github.com/Hitoshi85/secret-agent-simulator/issues)
-- **Mockups:** the agreed look (v2) and the case screens (case 01) are in [docs/mockups/](docs/mockups/)
-- **Last updated:** 2026-11-15
+- **Mockups:** the agreed look (v2) and the case screens (case 01, case 02) are in [docs/mockups/](docs/mockups/)
+- **Last updated:** 2026-11-19
 
 ## 1. Core requirements
 
@@ -36,6 +36,7 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 | R17 | One case takes about 15 minutes in one sitting (Hitoshi's choice). | Planned |
 | R18 | Cases are separate code, easy to swap and edit (Hitoshi's requirement, 2026-11-15): each case is one data file in `src/cases/` (text, traits, witnesses, traces, places), run by the shared engine in `src/case/`; `?case=<id>` picks one. | Done (#6) |
 | R19 | Finding leads without aimless walking (Hitoshi's feedback, 2026-11-16): gold arrows at the screen edge point to witnesses and traces not visited yet, showing only the distance, never who or what is there; and when you take the case, your handler's first lead arrives on the Phone. | Done (#12) |
+| R20 | Case 02, "The Compass Ledger" (Hitoshi's request, 2026-11-19): a separate art-mystery case with an original story (a fictional guild of Renaissance engineers and its hidden ledger). Six seals at landmarks, one per subject (world, art, military and technology history, mechanical and electrical engineering), open in any order; questions at high school to college level in mixed formats (multiple choice, put in order, cipher, match pairs, calculation, control logic). Every question is different each time: engineering questions and ciphers are generated, orderings and pairs are drawn from banks, facts come from a bank of 40 per subject, and seen questions are remembered on the phone. Wrong answers add Heat; each seal gives a letter of a hidden word that may be guessed after 4 of 6 seals; then fetch the ledger at the word's place. `?case=compass`. | In progress (#15) |
 
 ### How we work
 
@@ -84,6 +85,10 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 | 2026-11-16 | Played The Dossier: "feels slow with a lot of aimless walking"; wants running, a hint or direction to witnesses and objects, and a map of the game world; open to other ideas. Cards: "Double-tap to run", "Edge arrows with distance", "Corner minimap plus big map", "Handler's first lead". | Built in #12 (R6, R9, R19), issue #11. |
 | 2026-11-16 | Pacing mockup: "Don't show who the people are on the left screen but still show the direction and distance." | Arrows show only direction and distance (R19), #12. |
 | 2026-11-16 | "Always show options as selectable cards." "Always tell me who/what we are waiting on: me, you, or GitHub." | W16. |
+| 2026-11-19 | "Create a new separate case in the style of Da Vinci code with questions about world history, art history, military history, technology history, mechanical engineering and electrical engineering … mix up the formats … show sample questions/formats as screenshots first." | Original story (no characters or plot from the book); 8 sample screens, one per subject and format. R20, issue #15. |
+| 2026-11-19 | "Can it be written in a way that questions/formats change every time and all questions are available to solve in any order?" | Seal board with all six seals open; subjects dealt to landmarks and formats drawn per play; letters fill fixed slots. Mockup revised to 11 screens. |
+| 2026-11-19 | "Every question should be different each time." Chose "40 per subject" for the first fact bank. | Generated engineering and cipher questions, drawn orderings and pairs, seen-question memory on the phone. |
+| 2026-11-19 | Approved the design with "Drop the early-guess finale", then: "Actually must answer 4 of 6 before guess". | The word may be guessed once 4 of 6 seals are broken (wrong guess adds Heat); saved as docs/mockups/case-02-compass.png. |
 
 ## 4. Open backlog
 
@@ -95,6 +100,7 @@ Add the `ready` label to an issue to start it.
 | #5 | First case: recover the stolen dossier (R11, R12, R15, R16, R18) | Done (#6, #7) |
 | #11 | Speed up the dossier case: running, lead arrows, maps, handler's first lead (R6, R9, R19) | In progress (#12) |
 | – | Station chase when the thief gets away (R14, R15) | To file |
+| #15 | Case 02, The Compass Ledger: seals, question generators, fact bank (R20) | In progress |
 
 ## 5. Ideas mentioned, not yet requested
 
