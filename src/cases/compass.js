@@ -1,6 +1,5 @@
-// Case 02, The Compass Ledger: a seal case. A fictional guild of Renaissance engineers hid its ledger
-// in the city behind six seals, one per subject. The rules are in src/case/seals.js, the questions
-// in src/case/quiz.js; this file gives the story, the places, the hidden words and the banks.
+// Case 02, The Compass Ledger: a fictional guild of engineers hid its ledger behind six seals, one per
+// subject. Rules in src/case/seals.js, questions in src/case/quiz.js; here: story, places, words, banks.
 import { MAKERS } from '../case/quiz.js';
 import { FACTS } from './compass-facts.js';
 
@@ -8,41 +7,23 @@ const { gearWheel, gearSpeed, lever, pulley, seriesResistor, power, parallel, lo
 
 // [year, event]; BC years are negative. Any five at least 8 years apart make an ordering question.
 const EVENTS = [
-  [-776, 'The first recorded Olympic Games'], [-509, 'Rome becomes a republic'], [-490, 'The Battle of Marathon'],
-  [-323, 'Alexander the Great dies in Babylon'], [-221, 'Qin Shi Huang unifies China'], [-44, 'Julius Caesar is assassinated'],
-  [-27, 'Augustus becomes the first Roman emperor'], [79, 'Vesuvius buries Pompeii'], [313, 'The Edict of Milan tolerates Christianity'],
-  [476, 'The last Western Roman emperor is deposed'], [622, 'Muhammad\'s journey to Medina, the Hijra'], [800, 'Charlemagne is crowned emperor in Rome'],
-  [1066, 'The Norman conquest of England'], [1096, 'The First Crusade sets out'], [1206, 'Genghis Khan is proclaimed ruler of the Mongols'],
-  [1215, 'Magna Carta is sealed in England'], [1271, 'Marco Polo sets out for China'], [1337, 'The Hundred Years\' War begins'],
-  [1348, 'The Black Death reaches Florence'], [1381, 'The Peasants\' Revolt in England'], [1397, 'The Medici Bank is founded in Florence'],
-  [1415, 'The Battle of Agincourt'], [1453, 'Constantinople falls to the Ottomans'], [1492, 'Columbus reaches the Caribbean'],
-  [1498, 'Vasco da Gama reaches India by sea'], [1504, 'Michelangelo\'s David is unveiled in Florence'], [1517, 'Luther posts his 95 Theses'],
-  [1519, 'Cortés lands in Mexico'], [1522, 'Magellan\'s expedition completes the first voyage around the world'],
-  [1543, 'Copernicus publishes his Sun-centred universe'], [1588, 'The Spanish Armada is defeated'], [1603, 'The Tokugawa shogunate begins in Japan'],
-  [1620, 'The Mayflower lands in New England'], [1633, 'Galileo is tried by the Inquisition'], [1648, 'The Peace of Westphalia ends the Thirty Years\' War'],
-  [1687, 'Newton publishes the Principia'], [1688, 'England\'s Glorious Revolution'], [1776, 'The US Declaration of Independence'],
-  [1789, 'The storming of the Bastille'], [1804, 'Napoleon crowns himself emperor'], [1815, 'Napoleon is defeated at Waterloo'],
-  [1848, 'Revolutions sweep across Europe'], [1861, 'The Kingdom of Italy is proclaimed'], [1865, 'The American Civil War ends'],
-  [1868, 'Japan\'s Meiji Restoration'], [1869, 'The Suez Canal opens'], [1871, 'Germany is unified as an empire'],
-  [1903, 'The Wright brothers\' first powered flight'], [1914, 'The First World War begins'], [1917, 'The Russian Revolution'],
-  [1929, 'The Wall Street Crash'], [1939, 'The Second World War begins'], [1945, 'The United Nations is founded'],
-  [1947, 'India and Pakistan become independent'], [1949, 'The People\'s Republic of China is proclaimed'], [1957, 'Sputnik 1 is launched'],
-  [1969, 'Apollo 11 lands on the Moon'], [1989, 'The Berlin Wall falls'], [1994, 'South Africa\'s first free election ends apartheid'],
+  [-776, 'The first recorded Olympic Games'], [-490, 'The Battle of Marathon'], [-221, 'Qin Shi Huang unifies China'],
+  [-27, 'Augustus becomes the first Roman emperor'], [313, 'The Edict of Milan tolerates Christianity'], [622, 'Muhammad\'s journey to Medina, the Hijra'],
+  [1066, 'The Norman conquest of England'], [1206, 'Genghis Khan is proclaimed ruler of the Mongols'], [1271, 'Marco Polo sets out for China'],
+  [1348, 'The Black Death reaches Florence'], [1397, 'The Medici Bank is founded in Florence'], [1453, 'Constantinople falls to the Ottomans'],
+  [1498, 'Vasco da Gama reaches India by sea'], [1517, 'Luther posts his 95 Theses'], [1522, 'Magellan\'s expedition completes the first voyage around the world'],
+  [1588, 'The Spanish Armada is defeated'], [1620, 'The Mayflower lands in New England'], [1648, 'The Peace of Westphalia ends the Thirty Years\' War'],
+  [1688, 'England\'s Glorious Revolution'], [1789, 'The storming of the Bastille'], [1815, 'Napoleon is defeated at Waterloo'],
+  [1861, 'The Kingdom of Italy is proclaimed'], [1868, 'Japan\'s Meiji Restoration'], [1871, 'Germany is unified as an empire'],
+  [1914, 'The First World War begins'], [1929, 'The Wall Street Crash'], [1945, 'The United Nations is founded'],
+  [1949, 'The People\'s Republic of China is proclaimed'], [1969, 'Apollo 11 lands on the Moon'], [1994, 'South Africa\'s first free election ends apartheid'],
 ];
 
 const INVENTIONS = [
-  ['Johannes Gutenberg', 'Movable-type printing press'], ['Galileo Galilei', 'Telescope turned on Jupiter\'s moons'],
-  ['James Watt', 'Steam engine with a separate condenser'], ['Samuel Morse', 'Dot-and-dash telegraph code'],
-  ['Alessandro Volta', 'The first electric battery'], ['Michael Faraday', 'Electromagnetic induction'],
-  ['Thomas Edison', 'The phonograph'], ['Alexander Graham Bell', 'The first telephone patent'],
-  ['Guglielmo Marconi', 'Radio messages across the Atlantic'], ['Karl Benz', 'The first practical petrol motorcar'],
-  ['The Wright brothers', 'The first powered aeroplane flight'], ['Nikola Tesla', 'The AC induction motor'],
-  ['Charles Babbage', 'The Analytical Engine design'], ['Ada Lovelace', 'The first published computer program'],
-  ['Tim Berners-Lee', 'The World Wide Web'], ['George Stephenson', 'The Rocket locomotive'],
-  ['Richard Arkwright', 'The water frame spinning machine'], ['Christiaan Huygens', 'The pendulum clock'],
-  ['John Harrison', 'A sea clock for finding longitude'], ['Louis Daguerre', 'An early practical photograph process'],
-  ['Rudolf Diesel', 'The compression-ignition engine'], ['Enrico Fermi', 'The first nuclear reactor'],
-  ['Robert Goddard', 'The first liquid-fuelled rocket'], ['Eli Whitney', 'The cotton gin'],
+  ['Johannes Gutenberg', 'Movable-type printing press'], ['Galileo Galilei', 'Telescope turned on Jupiter\'s moons'], ['James Watt', 'Steam engine with a separate condenser'],
+  ['Samuel Morse', 'Dot-and-dash telegraph code'], ['Alessandro Volta', 'The first electric battery'], ['Michael Faraday', 'Electromagnetic induction'],
+  ['Thomas Edison', 'The phonograph'], ['Alexander Graham Bell', 'The first telephone patent'], ['Guglielmo Marconi', 'Radio messages across the Atlantic'],
+  ['Karl Benz', 'The first practical petrol motorcar'], ['The Wright brothers', 'The first powered aeroplane flight'], ['Nikola Tesla', 'The AC induction motor'],
 ];
 
 const ARTWORKS = [
@@ -50,10 +31,6 @@ const ARTWORKS = [
   ['Raphael', 'The School of Athens'], ['Filippo Brunelleschi', 'The dome of Florence Cathedral'], ['Lorenzo Ghiberti', 'The Baptistery\'s Gates of Paradise'],
   ['Donatello', 'The bronze David'], ['Giotto', 'The Scrovegni Chapel frescoes'], ['Masaccio', 'The Holy Trinity fresco'],
   ['Titian', 'Venus of Urbino'], ['Caravaggio', 'The Calling of Saint Matthew'], ['Gian Lorenzo Bernini', 'The Ecstasy of Saint Teresa'],
-  ['Rembrandt', 'The Night Watch'], ['Johannes Vermeer', 'Girl with a Pearl Earring'], ['Diego Velázquez', 'Las Meninas'],
-  ['Jan van Eyck', 'The Arnolfini Portrait'], ['Hieronymus Bosch', 'The Garden of Earthly Delights'], ['Katsushika Hokusai', 'The Great Wave off Kanagawa'],
-  ['Claude Monet', 'Impression, Sunrise'], ['Vincent van Gogh', 'The Starry Night'], ['Pablo Picasso', 'Guernica'],
-  ['Edvard Munch', 'The Scream'], ['Benvenuto Cellini', 'Perseus with the head of Medusa'], ['Bartolomeo Ammannati', 'The Neptune fountain in the Signoria'],
 ];
 
 const WAR_WORDS = ['LEGION', 'CANNAE', 'CAVALRY', 'FLANK', 'SIEGE', 'GARRISON', 'ARMOUR', 'BASTION', 'CITADEL', 'RAMPART', 'TRENCH', 'SENTRY',

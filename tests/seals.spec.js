@@ -13,7 +13,7 @@ async function open(page, url = '/index.html?case=compass') {
   return errors;
 }
 
-test('every subject makes fair questions with exactly one right answer', async ({ page }) => {
+test('every subject makes fair questions with one right answer; seen ones are avoided; seals stand on streets', async ({ page }) => {
   await open(page);
   const r = await page.evaluate(async () => {
     const Q = await import('/src/case/quiz.js');
@@ -39,6 +39,9 @@ test('every subject makes fair questions with exactly one right answer', async (
         }
       }
     }
+    const seen = new Set();
+    for (const s of def.subjects) for (let n = 0; n < 5; n++) { const q = Q.makeQuestion(s, Math.random, seen); if (seen.has(q.id)) problems.push(`${q.id} asked again`); seen.add(q.id); }
+    for (const p of [...def.sites, ...def.words]) if (!window.__agent.walkable(p.at[0], p.at[1])) problems.push(`${p.name || p.word} is off the street`);
     return { problems: problems.slice(0, 5), ids: Object.fromEntries(Object.entries(ids).map(([k, v]) => [k, v.size])), formats: Object.fromEntries(Object.entries(formats).map(([k, v]) => [k, [...v].sort()])) };
   });
   expect(r.problems).toEqual([]);
@@ -46,27 +49,6 @@ test('every subject makes fair questions with exactly one right answer', async (
   expect(r.formats.elec).toEqual(['number', 'switches']);
   expect(r.formats.military).toEqual(['choice', 'text']);
   expect(r.formats.world).toEqual(['choice', 'order']);
-});
-
-test('seen questions are not asked again while fresh ones remain', async ({ page }) => {
-  await open(page);
-  const r = await page.evaluate(async () => {
-    const Q = await import('/src/case/quiz.js');
-    const def = (await import('/src/cases/compass.js')).default;
-    const seen = new Set(), repeats = [];
-    for (const s of def.subjects) for (let n = 0; n < 5; n++) { const q = Q.makeQuestion(s, Math.random, seen); if (seen.has(q.id)) repeats.push(q.id); seen.add(q.id); }
-    return repeats;
-  });
-  expect(r).toEqual([]);
-});
-
-test('seals and the ledger stand on walkable ground', async ({ page }) => {
-  await open(page);
-  const bad = await page.evaluate(async () => {
-    const def = (await import('/src/cases/compass.js')).default;
-    return [...def.sites, ...def.words].filter((p) => !window.__agent.walkable(p.at[0], p.at[1])).map((p) => p.name || p.word);
-  });
-  expect(bad).toEqual([]);
 });
 
 test('the compass case plays end to end: any order, Heat, guess at four seals, the ledger', async ({ page }) => {
@@ -104,6 +86,34 @@ test('the compass case plays end to end: any order, Heat, guess at four seals, t
   expect(r.seen).toBe(4);
   await expect(page.locator('#caseBody')).toContainText('The ledger is yours');
   expect(errors).toEqual([]);
+});
+
+test('unfinished answers cost no Heat, wrong picks stay crossed out, and the lamps stay dark until the key turns', async ({ page }) => {
+  await open(page);
+  const r = await page.evaluate(async () => {
+    const A = window.__agent, v = A.caseView, S = await import('/src/case/seals.js'), out = {};
+    const find = (fmt) => { for (let n = 0; n < 300; n++) { A.act('again'); A.act('close'); const s = A.case.seals.find((x) => { v.ask(x.id); return x.q.format === fmt; }); if (s) { v.ask(s.id); return s; } } return null; };
+    find('number'); out.number = [A.act('answer', ''), A.act('answer', '.'), A.case.heat];
+    const t = find('text'); out.text = [A.act('answer', t.q.answer.slice(1)), A.case.heat];
+    const m = find('match'); out.match = [A.act('answer', { [m.q.left[0]]: m.q.answer[m.q.left[0]] }), A.case.heat];
+    const c = find('choice'); const bad = (c.q.answer + 1) % 4;
+    A.act('answer', bad); A.act('close'); v.ask(c.id);
+    out.choice = [A.act('answer', bad), A.case.heat, document.querySelector(`.opt[data-i="${bad}"]`).classList.contains('wrong')];
+    const w = find('switches'); out.dark = document.querySelectorAll('.circuit circle[fill="#3f7d4a"], .circuit circle[fill="#d9502f"]').length;
+    document.querySelector('[data-q="submit"]').click();
+    const Q = await import('/src/case/quiz.js'), l = Q.lamps(w.q.circuit, [0, 0, 0]);
+    out.lit = w.broken || document.querySelectorAll('.circuit circle[fill="#3f7d4a"], .circuit circle[fill="#d9502f"]').length === l.open + l.alarm;
+    A.act('again'); for (const s of A.case.seals.slice(0, 4)) { v.ask(s.id); A.act('answer', s.q.answer); }
+    out.guess = [A.act('guess', A.case.word.word.slice(0, 3)), A.case.heat, S.canGuess(A.case)];
+    return out;
+  });
+  expect(r.number).toEqual(['incomplete', 'incomplete', 0]);
+  expect(r.text).toEqual(['incomplete', 0]);
+  expect(r.match).toEqual(['incomplete', 0]);
+  expect(r.choice).toEqual(['incomplete', 1, true]);
+  expect(r.dark).toBe(0);
+  expect(r.lit).toBe(true);
+  expect(r.guess).toEqual(['incomplete', 0, true]);
 });
 
 test('questions answer by tapping: options, keypad, switches', async ({ page }) => {

@@ -35,7 +35,7 @@ const lever = (r) => {
 };
 const pulley = (r) => {
   const n = int(2, 6, r), E = int(5, 40, r) * 10, W = E * n, ask = r() < 0.5;
-  return { id: `pulley:${n}-${E}-${ask ? 'f' : 'd'}`, format: 'number', unit: ask ? 'N' : 'm', answer: ask ? E : 2 * n, title: 'The hoist',
+  return { id: ask ? `pulley:${n}-${E}-f` : `pulley:${n}-d`, format: 'number', unit: ask ? 'N' : 'm', answer: ask ? E : 2 * n, title: 'The hoist',
     prompt: ask
       ? `A block and tackle holds a <b>${W} N</b> load on <b>${n}</b> supporting ropes. Ignoring friction, what pull on the free end holds it?`
       : `A block and tackle has <b>${n}</b> ropes supporting the load. How far must you pull the free end to raise the load by <b>2 m</b>?`,
@@ -117,7 +117,7 @@ const ordering = (bank, gap = 8) => (r) => {
     const sorted = [...set].sort((a, b) => a[0] - b[0]);
     return { id: `order:${ys.join('-')}`, format: 'order', title: 'The bronze calendar', items: set.map((e) => e[1]), answer: sorted.map((e) => e[1]),
       prompt: 'The guild scratched five events into the stone. Put them in order, earliest at the top.',
-      hint: `The earliest is ${sorted[0][1].toLowerCase()}.`, explain: sorted.map((e) => `${e[0] < 0 ? -e[0] + ' BC' : e[0]}: ${e[1]}`).join('<br>') };
+      hint: `The earliest is ${sorted[0][1].replace(/^The /, 'the ')}.`, explain: sorted.map((e) => `${e[0] < 0 ? -e[0] + ' BC' : e[0]}: ${e[1]}`).join('<br>') };
   }
 };
 // Match pairs: four [left, right] pairs from a bank, with no left or right used twice.
@@ -141,6 +141,15 @@ export function makeQuestion(subject, random = Math.random, seen = new Set()) {
   let q;
   for (let i = 0; i < 30; i++) { q = pick(subject.makers, random)(random, seen); if (!seen.has(q.id)) break; }
   return { ...q, subject: subject.id };
+}
+
+// Is the answer filled in? An empty number, missing cipher letters or unjoined pairs are not wrong,
+// just not ready, and cost no Heat.
+export function isComplete(q, v) {
+  if (q.format === 'number') return /^(\d+\.?\d*|\.\d+)$/.test(String(v).replace(',', '.'));
+  if (q.format === 'text') return String(v).replace(/[^A-Za-z]/g, '').length === q.answer.length;
+  if (q.format === 'match') return !!v && q.left.every((l) => v[l]);
+  return v !== undefined && v !== null && v !== '';
 }
 
 // Is this the right answer? choice: option index; number: a number or text; text: letters;

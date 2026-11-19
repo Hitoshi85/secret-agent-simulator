@@ -119,6 +119,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1612; col
 .qbtns { display: flex; gap: 8px; }
 .qbtns button:first-child { flex: 0 0 92px; }
 .qbtns button:only-child { flex: 1; }
+.sheet .qbtns button.off { background: #8d8679; }
 .entry { display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 15px; margin: 6px 0; }
 .entry > span { min-width: 120px; height: 46px; border-radius: 9px; border: 2px solid #c9a24a; background: #fffaf0; font: 700 22px/42px "Courier New", monospace; text-align: center; }
 .entry.letters { gap: 5px; flex-wrap: wrap; }

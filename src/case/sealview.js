@@ -1,9 +1,8 @@
-// A seal case in the city and on screen: the seals at their landmarks, the seal board (the Notebook),
-// one sheet per question format, the word guess and the endings. The rules are in seals.js. It offers
-// the same calls as view.js, so game.js and the navaids treat both kinds of case alike.
+// A seal case on screen: seals at landmarks, the seal board (Notebook), a sheet per question format, the
+// word guess and endings. Rules in seals.js; it offers view.js's calls, so game.js treats both alike.
 import * as THREE from 'three';
 import { newSealCase, openSeal, answer, letters, guess, canGuess, brokenCount, claim } from './seals.js';
-import { lamps } from './quiz.js';
+import { lamps, isComplete } from './quiz.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
@@ -91,24 +90,24 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
   // A seal's question.
   v.ask = (id) => {
     const s = openSeal(v.c, id); if (!s) return; v.guessing = false;
-    if (v.cur !== id) { v.cur = id; v.input = s.q.format === 'order' ? [...s.q.items] : s.q.format === 'match' ? { pairs: {}, sel: null } : s.q.format === 'switches' ? [0, 0, 0] : s.q.format === 'choice' ? [] : ''; }
+    if (v.cur !== id) { v.cur = id; v.input = s.q.format === 'order' ? [...s.q.items] : s.q.format === 'match' ? { pairs: {}, sel: null } : s.q.format === 'switches' ? [0, 0, 0] : ''; v.lit = null; }
     render(s);
   };
   function render(s, msg = '') {
     const q = s.q, done = s.broken;
     let body = '';
-    if (q.format === 'choice') body = q.options.map((o, i) => `<button type="button" class="opt${done && i === q.answer ? ' right' : ''}${v.input.includes(i) ? ' wrong' : ''}" data-q="opt" data-i="${i}"><span class="k">${'ABCD'[i]}</span>${esc(o)}</button>`).join('');
+    if (q.format === 'choice') body = q.options.map((o, i) => `<button type="button" class="opt${done && i === q.answer ? ' right' : ''}${s.wrong.includes(i) ? ' wrong' : ''}" data-q="opt" data-i="${i}"><span class="k">${'ABCD'[i]}</span>${esc(o)}</button>`).join('');
     if (q.format === 'number') body = `<div class="entry"><span>${esc(v.input) || '&nbsp;'}</span> ${esc(q.unit)}</div>${pad([...'123456789', '⌫', '0', '.'])}`;
     if (q.format === 'text') body = `<div class="cipher">${q.cipher.split('   ').map((g) => `<span>${esc(g)}</span>`).join(' ')}</div><div class="entry letters">${[...Array(q.answer.length).keys()].map((i) => `<span>${v.input[i] || ''}</span>`).join('')}</div>${pad([...LETTERS, '⌫'], 'abc')}`;
     if (q.format === 'order') body = `<div class="olist">${v.input.map((t, i) => `<div class="orow" data-row="${i}"><span class="grip">⋮⋮</span>${esc(t)}</div>`).join('')}</div><p class="small">Hold and drag a line to move it.</p>`;
     if (q.format === 'match') body = matchHtml(q);
-    if (q.format === 'switches') body = circuitHtml(q.circuit, v.input);
+    if (q.format === 'switches') body = circuitHtml(q.circuit, v.input, v.lit);
     const action = { number: 'Answer', text: 'Decode', order: 'Check order', match: 'Check pairs', switches: 'Turn the key' }[q.format];
     const foot = done
       ? `<div class="reveal"><b>Seal broken: letter ${s.letter}, slot ${s.slot + 1} of ${v.c.seals.length}.</b> ${q.explain}${v.c.known ? `<br><b>All six broken: ${v.c.word.word}.</b> The ledger is at ${esc(v.c.word.place)}.` : ''}</div>
         <button type="button" data-q="board">Back to the seal board</button>`
       : `${msg ? `<p class="qmsg">${msg}</p>` : ''}${v.c.hinted.includes(s.id) ? `<p class="small hint">Hint: ${q.hint}</p>` : ''}
-        <div class="qbtns"><button type="button" class="close" data-q="hint">Hint</button>${action ? `<button type="button" data-q="submit">${action}</button>` : ''}</div>
+        <div class="qbtns"><button type="button" class="close" data-q="hint">Hint</button>${action ? `<button type="button" data-q="submit"${isComplete(q, q.format === 'match' ? v.input.pairs : v.input) ? '' : ' class="off"'}>${action}</button>` : ''}</div>
         <button type="button" class="close" data-case="close">Leave it for now</button>`;
     open(`<span class="subj">${esc(s.subject.name)}</span><span class="fmt">${FORMATS[q.format]}</span>
       <h2>${esc(q.title)}</h2><p>${q.prompt}</p>${body}${foot}`, 'quiz');
@@ -134,8 +133,9 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
   }
 
   // The strongbox circuit: gate 1 (A, B) feeds gate 2 with C into Open; gate 3 takes two inputs into Alarm.
-  function circuitHtml(c, sw) {
-    const Y = [30, 62, 124], name = 'ABC', l = lamps(c, sw);
+  // The lamps stay dark until the key is turned, and then show only the setting that was tried.
+  function circuitHtml(c, sw, lit) {
+    const Y = [30, 62, 124], name = 'ABC', l = lit ? lamps(c, lit) : { open: 0, alarm: 0 };
     const bubble = (x, y) => `<circle cx="${x - 5}" cy="${y}" r="4" fill="#fffaf0"/>`;
     const wire = (i, tx, y, gx, not) => `<path d="M24 ${Y[i]} H${tx} V${y} H${gx - (not ? 9 : 0)}"/>${not ? bubble(gx, y) : ''}<circle cx="${tx}" cy="${Y[i]}" r="2.5" fill="#262019"/>`;
     const gate = (x, y, h, label) => `<rect x="${x}" y="${y}" width="46" height="${h}" rx="5" fill="#fffaf0"/><text x="${x + 23}" y="${y + h / 2 + 4}" stroke="none" fill="#262019" font-size="10" text-anchor="middle">${label}</text>`;
@@ -157,10 +157,15 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
     const r = answer(v.c, s.id, value); hud();
     if (r === 'right') { saveSeen(seen); for (const t of v.targets) { if (t.id === s.id) t.mesh.children[1].material = STONE_MAT; if (t.kind === 'ledger' && v.c.known) t.mesh.visible = t.ring.visible = true; } }
     if (r === 'lost') ending();
-    else render(s, r === 'wrong' ? `Not right. Heat ${v.c.heat} / ${def.maxHeat}: the rivals are closer. Try again.` : '');
+    else render(s, r === 'wrong' ? `Not right. Heat ${v.c.heat} / ${def.maxHeat}: the rivals are closer. Try again.` : r === 'incomplete' ? 'Fill every slot first. No Heat for that.' : '');
     return r;
   };
-  const submit = () => v.answer(seal(v.cur).q.format === 'match' ? v.input.pairs : v.input);
+  const submit = () => {
+    const s = seal(v.cur), value = s.q.format === 'match' ? v.input.pairs : v.input;
+    if (!isComplete(s.q, value)) return render(s, s.q.format === 'number' ? 'Enter a number first.' : 'Fill every slot first.');
+    if (s.q.format === 'switches') v.lit = [...v.input];
+    return v.answer(value);
+  };
 
   v.guessSheet = (msg = '') => {
     if (!canGuess(v.c)) return v.notebook();
@@ -177,6 +182,7 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
     if (r === 'right') { for (const t of v.targets) if (t.kind === 'ledger') t.mesh.visible = t.ring.visible = true; v.guessing = false; v.input = ''; v.notebook(); v.toast(`${v.c.word.word}: the ledger is at ${v.c.word.place}`); }
     else if (r === 'lost') ending();
     else if (r === 'wrong') { v.input = ''; v.guessSheet(`Not it. Heat ${v.c.heat} / ${def.maxHeat}.`); }
+    else if (r === 'incomplete') v.guessSheet('Fill every gap first.');
     return r;
   };
   const fullGuess = () => { const known = letters(v.c); let k = 0; return known.map((ch) => ch || v.input[k++] || '').join(''); };
@@ -197,16 +203,16 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
     if (k === 'board') { v.guessing = false; return v.notebook(); }
     if (k === 'guess') { v.input = ''; v.guessing = true; return v.guessSheet(); }
     if (v.guessing && k === 'key') { const free = letters(v.c).filter((ch) => !ch).length; v.input = b.dataset.k === '⌫' ? v.input.slice(0, -1) : v.input.length < free ? v.input + b.dataset.k : v.input; return v.guessSheet(); }
-    if (k === 'sendguess') return v.guess(fullGuess());
+    if (k === 'sendguess') return fullGuess().length < v.c.word.word.length ? v.guessSheet('Fill every gap first.') : v.guess(fullGuess());
     if (!s || s.broken) return;
     if (k === 'hint') { if (!v.c.hinted.includes(s.id)) v.c.hinted.push(s.id); return render(s); }
-    if (k === 'opt') { if (!v.input.includes(i)) { const r = v.answer(i); if (r === 'wrong') { v.input.push(i); render(s, `Not right. Heat ${v.c.heat} / ${def.maxHeat}: the rivals are closer. Try again.`); } } return; }
+    if (k === 'opt') return v.answer(i);
     if (k === 'key') {
       const max = s.q.format === 'text' ? s.q.answer.length : 8;
       v.input = b.dataset.k === '⌫' ? v.input.slice(0, -1) : v.input.length < max ? v.input + b.dataset.k : v.input;
       return render(s);
     }
-    if (k === 'sw') { v.input[i] = 1 - v.input[i]; return render(s); }
+    if (k === 'sw') { v.input[i] = 1 - v.input[i]; v.lit = null; return render(s); }
     if (k === 'left') { const l = s.q.left[i]; if (v.input.pairs[l]) delete v.input.pairs[l]; else v.input.sel = l; return render(s); }
     if (k === 'right' && v.input.sel) { const r = s.q.right[i]; for (const [l, x] of Object.entries(v.input.pairs)) if (x === r) delete v.input.pairs[l]; v.input.pairs[v.input.sel] = r; v.input.sel = null; return render(s); }
     if (k === 'submit') submit();

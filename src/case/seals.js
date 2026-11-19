@@ -3,13 +3,13 @@
 // question, made fresh when you first open it, and breaking it reveals the letter in its slot. Seals
 // can be broken in any order. Wrong answers and wrong guesses add Heat. Once `guessAt` seals are
 // broken you may guess the word; all of them reveal it. Then walk to the word's place to win.
-import { makeQuestion, isRight, shuffle } from './quiz.js';
+import { makeQuestion, isRight, isComplete, shuffle } from './quiz.js';
 
 export function newSealCase(def, random = Math.random, seen = new Set()) {
   const sites = shuffle([...def.sites], random);
   const word = def.words[Math.floor(random() * def.words.length)];
   const slots = shuffle([...Array(def.subjects.length).keys()], random);
-  const seals = def.subjects.map((s, i) => ({ id: s.id, subject: s, site: sites[i], slot: slots[i], letter: word.word[slots[i]], q: null, broken: false, tries: 0 }));
+  const seals = def.subjects.map((s, i) => ({ id: s.id, subject: s, site: sites[i], slot: slots[i], letter: word.word[slots[i]], q: null, broken: false, tries: 0, wrong: [] }));
   return { def, random, seals, word, seen, heat: 0, status: 'open', known: false, clock: 0, hinted: [] }; // status: open, won or lost
 }
 
@@ -26,12 +26,14 @@ export function openSeal(c, id) {
 
 function addHeat(c) { c.heat++; if (c.heat >= c.def.maxHeat) c.status = 'lost'; }
 
-// One answer: 'right', 'wrong', 'lost', or null when the seal can't be answered.
+// One answer: 'right', 'wrong', 'lost', 'incomplete' (no Heat), or null when the seal can't be answered.
+// Wrong multiple-choice picks stay on the seal, so picking one again costs nothing.
 export function answer(c, id, value) {
   const s = c.seals.find((x) => x.id === id);
   if (!s || !s.q || s.broken || c.status !== 'open') return null;
+  if (!isComplete(s.q, value) || (s.q.format === 'choice' && s.wrong.includes(Number(value)))) return 'incomplete';
   s.tries++;
-  if (!isRight(s.q, value)) { addHeat(c); return c.status === 'lost' ? 'lost' : 'wrong'; }
+  if (!isRight(s.q, value)) { if (s.q.format === 'choice') s.wrong.push(Number(value)); addHeat(c); return c.status === 'lost' ? 'lost' : 'wrong'; }
   s.broken = true; c.seen.add(s.q.id);
   if (brokenCount(c) === c.seals.length) c.known = true;
   return 'right';
@@ -40,9 +42,11 @@ export function answer(c, id, value) {
 // The hidden word with the letters found so far ('C _ _ _ L _' as an array, '' for unknown).
 export const letters = (c) => [...c.word.word].map((ch, i) => (c.known || c.seals.some((s) => s.broken && s.slot === i) ? ch : ''));
 
-// A guess at the word: 'right', 'wrong', 'lost', or 'locked' before enough seals are broken.
+// A guess at the word: 'right', 'wrong', 'lost', 'incomplete' (gaps left, no Heat), or 'locked' before
+// enough seals are broken.
 export function guess(c, w) {
   if (!canGuess(c)) return 'locked';
+  if (String(w).replace(/[^A-Za-z]/g, '').length !== c.word.word.length) return 'incomplete';
   if (String(w).toUpperCase().replace(/[^A-Z]/g, '') === c.word.word) { c.known = true; return 'right'; }
   addHeat(c); return c.status === 'lost' ? 'lost' : 'wrong';
 }
