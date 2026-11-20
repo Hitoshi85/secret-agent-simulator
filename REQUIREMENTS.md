@@ -36,7 +36,7 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 | R17 | One case takes about 15 minutes in one sitting (Hitoshi's choice). | Planned |
 | R18 | Cases are separate code, easy to swap and edit (Hitoshi's requirement, 2026-11-15): each case is one data file in `src/cases/` (text, traits, witnesses, traces, places), run by the shared engine in `src/case/`; `?case=<id>` picks one. | Done (#6) |
 | R19 | Finding leads without aimless walking (Hitoshi's feedback, 2026-11-16): gold arrows at the screen edge point to witnesses and traces not visited yet, showing only the distance, never who or what is there; and when you take the case, your handler's first lead arrives on the Phone. | Done (#12) |
-| R20 | Case 02, "The Compass Ledger" (Hitoshi's request, 2026-11-19): a separate art-mystery case with an original story (a fictional guild of Renaissance engineers and its hidden ledger). Six seals at landmarks, one per subject (world, art, military and technology history, mechanical and electrical engineering), open in any order; questions at high school to college level in mixed formats (multiple choice, put in order, cipher, match pairs, calculation, control logic). Every question is different each time: engineering questions and ciphers are generated, orderings and pairs are drawn from banks, facts come from a bank of 40 per subject, and seen questions are remembered on the phone. Wrong answers add Heat; each seal gives a letter of a hidden word that may be guessed after 4 of 6 seals; then fetch the ledger at the word's place. `?case=compass`. | In progress (#15) |
+| R20 | Case 02, "The Compass Ledger" (Hitoshi's request, 2026-11-19): a separate art-mystery case with an original story (a fictional guild of Renaissance engineers and its hidden ledger). Six seals at landmarks, one per subject (world, art, military and technology history, mechanical and electrical engineering), open in any order; questions at high school to college level in mixed formats (multiple choice, put in order, cipher, match pairs, calculation, control logic). Every question is different each time: engineering questions and ciphers are generated, orderings and pairs are drawn from banks, facts come from a bank of 40 per subject, and seen questions are remembered on the phone. Wrong answers add Heat; each seal gives a letter of a hidden word that may be guessed after 4 of 6 seals; then fetch the ledger at the word's place. `?case=compass`. | Done (#16, #19) |
 
 ### How we work
 
@@ -89,6 +89,7 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 | 2026-11-19 | "Can it be written in a way that questions/formats change every time and all questions are available to solve in any order?" | Seal board with all six seals open; subjects dealt to landmarks and formats drawn per play; letters fill fixed slots. Mockup revised to 11 screens. |
 | 2026-11-19 | "Every question should be different each time." Chose "40 per subject" for the first fact bank. | Generated engineering and cipher questions, drawn orderings and pairs, seen-question memory on the phone. |
 | 2026-11-19 | Approved the design with "Drop the early-guess finale", then: "Actually must answer 4 of 6 before guess". | The word may be guessed once 4 of 6 seals are broken (wrong guess adds Heat); saved as docs/mockups/case-02-compass.png. |
+| 2026-11-20 | "What happened to CI / Lint test" (the required check never ran after the merge queue rebased #16). | The queue's own pushes do not start pull_request CI, so new commits were pushed to run it; a test-order bug and one runner timeout were fixed or rerun, and Hitoshi merged #16 by hand. The full banks follow in #19. |
 
 ## 4. Open backlog
 
@@ -100,7 +101,7 @@ Add the `ready` label to an issue to start it.
 | #5 | First case: recover the stolen dossier (R11, R12, R15, R16, R18) | Done (#6, #7) |
 | #11 | Speed up the dossier case: running, lead arrows, maps, handler's first lead (R6, R9, R19) | In progress (#12) |
 | – | Station chase when the thief gets away (R14, R15) | To file |
-| #15 | Case 02, The Compass Ledger: seals, question generators, fact bank (R20) | In progress |
+| #15 | Case 02, The Compass Ledger: seals, question generators, fact bank (R20) | Done (#16, #19) |
 
 ## 5. Ideas mentioned, not yet requested
 
