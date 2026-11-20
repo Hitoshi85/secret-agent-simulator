@@ -39,6 +39,7 @@ test('Begin starts the chase and the autopilot finishes stage 1 with him always 
   expect(r.card).toContain('Stage 1 of 3 done');
   expect(r.minGap, 'the off-roader stays ahead').toBeGreaterThan(0);
   expect(r.maxAir, 'air time over a crest').toBeGreaterThan(0.3);
+  expect(r.maxAir, 'short hops, not long jumps').toBeLessThan(0.8);
   expect(r.maxKmh, 'tops out near 140 km/h').toBeGreaterThan(130);
   expect(r.maxKmh).toBeLessThan(150);
   expect(r.passed, 'oncoming traffic went by').toBeGreaterThan(0);
@@ -62,7 +63,7 @@ test('braking slows the car and lights the brake lamps; losing him ends the stag
   });
   expect(r.v1, 'braking slows the car').toBeLessThan(r.v0 - 10);
   expect(r.button, 'the Brake button lights').toBe(true);
-  expect(r.lostAt, 'out of sight long enough loses him').toBeGreaterThan(0);
+  expect(r.lostAt, 'out of sight for about 12 seconds loses him').toBeGreaterThan(330);
   expect(r.card).toContain("He's gone");
   expect(r.after.s, 'retry restarts the stage').toBeLessThan(20);
   expect(r.after.sight).toBe(1);

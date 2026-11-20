@@ -36,7 +36,7 @@ function makeRoad(st) {
   const road = { n: P.length, x: new Float32Array(P.length), z: new Float32Array(P.length), y: new Float32Array(P.length), dir: new Float32Array(P.length), curv: new Float32Array(P.length), cyp: new Uint8Array(P.length), crests, len: (P.length - 1) * STEP, end: LEN };
   P.forEach((p, i) => {
     let y = h[i];
-    for (const c of crests) { const u = (i * STEP - c) / 38; if (Math.abs(u) < 1) y += 2.8 * Math.cos(u * Math.PI / 2) ** 2; }
+    for (const c of crests) { const u = (i * STEP - c) / 35; if (Math.abs(u) < 1) y += 3.0 * Math.cos(u * Math.PI / 2) ** 2; }
     road.x[i] = p.x; road.z[i] = p.z; road.y[i] = y;
   });
   for (let i = 0; i < road.n; i++) { const a = Math.max(0, i - 1), b = Math.min(road.n - 1, i + 1); road.dir[i] = Math.atan2(road.x[b] - road.x[a], road.z[b] - road.z[a]); }

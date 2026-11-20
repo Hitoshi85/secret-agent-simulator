@@ -1,6 +1,6 @@
 // The opening car chase, Pienza to Florence: its own scene, camera and HUD, three stages of about a
 // minute each. Hold the left or right half of the screen to steer (or arrows / A D), Brake (Space,
-// Down or S). Keep the black off-roader in sight; lose him for 6 seconds and the stage restarts.
+// Down or S). Keep the black off-roader in sight; lose him for 12 seconds and the stage restarts.
 import * as THREE from 'three';
 import { skyTex } from '../world/textures.js';
 import { buildStage, sampleRoad, STAGES } from './land.js';
@@ -42,7 +42,7 @@ export function makeChase({ renderer, onDone, toast }) {
     }); }
     c.world = buildStage(k); c.road = c.world.road; scene.add(c.world.group);
     c.stage = k; c.player = newCar(10, 1.1); c.player.v = 28; c.suv = newCar(55, 1.1); c.suv.v = 34;
-    c.player.y = sampleRoad(c.road, 10, r1).y; c.suv.y = sampleRoad(c.road, 55, r1).y;
+    for (const car of [c.player, c.suv]) { sampleRoad(c.road, car.s, r1); car.y = r1.y; car.vy = r1.slope * car.v; } // start on the road, following its slope
     c.traffic = traffic.map((m, i) => ({ ...newCar(200 + i * 230, -1.4), v: 17 + i * 2, mesh: m }));
     c.sight = { value: 1, visible: true, wasVisible: true, losses: 0 }; c.clock = 0;
     $('locName').textContent = STAGES[k].place; $('locSub').textContent = `${STAGES[k].name} · stage ${k + 1} of 3`; place(); fitCam(true);
@@ -176,7 +176,7 @@ export function makeChase({ renderer, onDone, toast }) {
     place(); fitCam(false);
     c.closest = Math.min(c.closest, c.gap);
     const onScreen = hud(w, h);
-    const seen = c.gap < 260 && onScreen && clearView(c.road, c.player.s - 9, camera.position.y, c.suv.s, c.suv.y + 1.6);
+    const seen = c.gap < 400 && onScreen && clearView(c.road, c.player.s - 9, camera.position.y, c.suv.s, c.suv.y + 1.6);
     const before = c.sight.losses;
     if (sightStep(c.sight, seen, dt)) { c.status = 'lost'; card(`<p class="kicker">Stage ${c.stage + 1} of 3</p><h2>He's gone</h2><p>You lost sight of the off-roader for too long. Try the stage again.</p><button type="button" data-chase="retry">Retry stage</button><button type="button" class="close" data-chase="skip">Skip to Florence</button>`); }
     if (c.sight.losses > before) c.lostCount++;

@@ -7,7 +7,7 @@ import { sampleRoad } from './land.js';
 export const KMH = 3.6;
 export const TOP = 39;          // about 140 km/h
 const SUV_TOP = 42;             // a little faster on the straights
-const G = 9.8, LOST_AFTER = 6;  // seconds out of sight before he is gone
+const G = 9.8, LOST_AFTER = 12; // seconds out of sight before he is gone
 const tmp = {};
 
 export function newCar(s, d) { return { s, d, psi: 0, v: 0, y: 0, vy: 0, air: 0, airTime: 0, shake: 0, crashes: 0 }; }
@@ -16,7 +16,7 @@ export function newCar(s, d) { return { s, d, psi: 0, v: 0, y: 0, vy: 0, air: 0,
 // falls, so it leaves the ground for a moment.
 function vertical(c, road, dt) {
   const r = sampleRoad(road, c.s, tmp);
-  c.y += c.vy * dt; c.vy -= G * dt;
+  c.y += c.vy * dt; c.vy -= G * (c.air > 0 ? 2.2 : 1) * dt; // heavier once airborne: short hops
   if (c.y <= r.y) {
     if (c.air > 0.25) { c.airTime = c.air; c.landed = true; } else c.landed = false;
     c.y = r.y; c.vy = r.slope * c.v * Math.cos(c.psi); c.air = 0;
@@ -56,7 +56,7 @@ export function crash(c, d) { c.v *= 0.35; if (d !== undefined) c.d = d; c.psi *
 export function driveSUV(c, road, dt, gap, playerV) {
   let k = 0; for (let a = 0; a <= 60; a += 6) k = Math.max(k, Math.abs(sampleRoad(road, c.s + a, tmp).curv));
   let target = Math.min(SUV_TOP, Math.sqrt(8 / Math.max(k, 1e-4)));
-  if (gap > 140) target *= 0.8; else if (gap < 30) target = Math.max(target, Math.min(SUV_TOP + 4, playerV + 4));
+  if (gap > 200) target *= 0.6; else if (gap > 110) target *= 0.8; else if (gap < 30) target = Math.max(target, Math.min(SUV_TOP + 4, playerV + 4));
   if (c.s > road.end + 40) target = 0;
   c.v += Math.max(-14, Math.min(7, (target - c.v) * 1.5)) * dt;
   c.d += (1.1 - c.d) * Math.min(1, dt * 2);
@@ -78,7 +78,7 @@ export function moveTraffic(list, road, dt, player) {
 // In Sight: drains while he is hidden (over a crest, round a bend, too far), refills in view.
 export function sightStep(sight, visible, dt) {
   sight.visible = visible;
-  sight.value = visible ? Math.min(1, sight.value + 0.35 * dt) : Math.max(0, sight.value - dt / LOST_AFTER);
+  sight.value = visible ? Math.min(1, sight.value + 0.7 * dt) : Math.max(0, sight.value - dt / LOST_AFTER);
   if (!visible && sight.wasVisible) sight.losses++;
   sight.wasVisible = visible;
   return sight.value <= 0;
