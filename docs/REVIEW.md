@@ -54,6 +54,6 @@ The reviewer judges how the change looks, not only whether the code works. From 
 
 `.github/scripts/merge-queue.js` (`reviewState`) reads the PR's comments. The newest verdict for the
 **current head commit** counts, so every new push needs a new review. Only comments by the owner's
-account (which the project's Claude posts as), repo members or the queue itself count. When the queue
-rebases a reviewed PR onto `main`, it posts the verdict for the rebased commit itself, since a rebase
-only replays the reviewed change. A `BLOCK` keeps the PR out of the queue until a new `PASS`.
+account (which the project's Claude posts as), repo members or the queue itself count. The queue never
+pushes to a PR branch (it tests a PR that is behind `main` merged with `main` in CI instead), so a
+review stays valid until the author pushes again. A `BLOCK` keeps the PR out of the queue until a new `PASS`.

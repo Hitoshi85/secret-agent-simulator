@@ -62,8 +62,7 @@ checked by `tests/phone-checks.spec.js` (250 draw calls, 400k triangles, 4 ms of
    `docs/screens/` and embed it as an image in the PR body; the merge queue looks for it).
    Wait for CI, fix failures until green. Never skip or weaken a test to get green.
 9. The merge queue (`.github/workflows/merge-queue.yml`) merges small green PRs (800 changed lines or
-   fewer; lock files, images and `vendor/` not counted) that have a screenshot in the description and a passing project review (see below), oldest first, rebasing each onto `main` and re-running CI before it merges. It
-   may rebase your branch: pull before pushing again. Label a PR `hold` to keep it out. Bigger PRs and PRs that
+   fewer; lock files, images and `vendor/` not counted) that have a screenshot in the description and a passing project review (see below), oldest first, testing each merged with the current `main` (a CI "queue test", no push to the branch) before it merges. Label a PR `hold` to keep it out. Bigger PRs and PRs that
    change `.github/workflows/` are merged by hand only when the owner says so ("m").
 10. Merges to `main` deploy to **dev** only (`https://hitoshi85.github.io/secret-agent-simulator/dev/`). After every
    shipped change, wait for the Pages workflow's **verify-live** job (it checks that `version.json` on both

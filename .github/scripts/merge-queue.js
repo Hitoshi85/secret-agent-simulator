@@ -2,22 +2,27 @@
 //
 // Each run looks at open PRs into main, oldest first, and works on the first one that may merge
 // on its own (see `eligibility`: small, with a screenshot, no `hold` label, no workflow changes):
-//   - behind main      -> rebase it onto main, re-run CI on the new commit, and wait
-//   - checks running   -> wait (the next run picks it up again)
+//   - behind main      -> test it merged with the current main (a "queue test" CI run, see `queueTest`),
+//                         without pushing to the PR branch, and wait for that run
+//   - checks running   -> wait (CI wakes the queue when it finishes)
 //   - a check failed   -> skip it for now and move on to the next PR
 //   - all checks green -> needs a passing project review of its head commit (see `reviewState`),
 //                         then squash-merge it, deploy, and start the next run
 // One PR at a time, in the order they were opened, so parallel work never lands untested on main.
+//
+// The queue never pushes to a PR branch. A push made with the built-in token starts no workflows,
+// changes the head commit (so the project review goes stale) and makes the bot the last pusher
+// (so a "most recent push must be approved" rule refuses the merge). That stalled PR 16 overnight.
 
 const REQUIRED_CHECK = 'Lint and smoke test'; // the job in ci.yml; must be present and green
 const MAX_CHANGED_LINES = 800;                // bigger PRs wait for the owner ("m"), unless labelled
 const ALLOW_BIG_LABEL = 'automerge';          // lets a PR over the size limit into the queue
 const HOLD_LABELS = ['hold', 'do-not-merge']; // keeps a PR out of the queue
-const CONFLICT_LABEL = 'queue-conflict';      // set when the queue cannot rebase a PR
+const CONFLICT_LABEL = 'queue-conflict';      // set when a PR conflicts with main
 const QUEUE_WORKFLOW = 'merge-queue.yml';
 const CI_WORKFLOW = 'ci.yml';
 const DEPLOY_WORKFLOW = 'pages.yml';
-const SELF_CHECKS = ['Merge queue'];          // our own job, never wait on it
+const SELF_CHECKS = ['Merge queue', 'Wake the merge queue']; // the queue's own jobs, never wait on them
 // Not counted towards the size limit: lock files, images and vendored libraries (vendor/).
 const SIZE_IGNORED = [/^package-lock\.json$/, /^docs\/screens\//, /^vendor\//, /\.(png|jpe?g|gif|webp)$/i];
 // GITHUB_TOKEN may not push or merge workflow changes, and those deserve the owner's eyes anyway.
@@ -32,6 +37,12 @@ const REVIEW_MARKER = /<!--\s*project-review:\s*(PASS|BLOCK)\s+([0-9a-f]{7,40})\
 const REVIEW_TRUSTED = ['OWNER', 'MEMBER', 'COLLABORATOR'];
 const REVIEW_BOTS = ['github-actions[bot]'];
 const NO_REVIEW_NEEDED = [/\.md$/i, /^docs\//, /\.(png|jpe?g|gif|webp)$/i];
+
+// A queue test is a workflow_dispatch CI run on the PR branch with `base` set to main's commit: CI merges
+// that commit into the branch before testing, and names the run after it (see run-name in ci.yml).
+const QUEUE_TEST_TITLE = (n, base) => `Queue test of #${n} on main ${base}`;
+// Marks the one comment the queue posts when GitHub refuses a merge of a given commit.
+const REFUSED_MARKER = (sha) => `<!-- merge-queue: refused ${sha} -->`;
 
 const BAD = new Set(['failure', 'cancelled', 'timed_out', 'action_required', 'startup_failure', 'stale']);
 
@@ -117,6 +128,19 @@ function checksState(runs) {
   return 'success';
 }
 
+// The state of the queue test of a PR's head commit on a given main commit: 'success', 'pending',
+// 'failure' or 'missing'. Only the newest matching run counts.
+function queueTest(runs, n, headSha, baseSha) {
+  const title = QUEUE_TEST_TITLE(n, baseSha);
+  const mine = (runs || [])
+    .filter((r) => r.event === 'workflow_dispatch' && r.head_sha === headSha && r.display_title === title)
+    .sort((a, b) => b.id - a.id);
+  if (!mine.length) return 'missing';
+  const r = mine[0];
+  if (r.status !== 'completed') return 'pending';
+  return r.conclusion === 'success' ? 'success' : 'failure';
+}
+
 async function run({ github, context, core }) {
   const { owner, repo } = context.repo;
   const full = `${owner}/${repo}`;
@@ -156,52 +180,47 @@ async function run({ github, context, core }) {
       }
     }
 
-    // 1. Make sure it is tested on top of the current main.
-    const { data: cmp } = await github.rest.repos.compareCommitsWithBasehead({
-      owner, repo, basehead: `${pr.base.ref}...${pr.head.sha}`,
-    });
+    // 1. It needs a passing project review of its head commit.
     const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number: n, per_page: 100 });
     const review = docsOnly(files) ? 'pass' : reviewState(comments, pr.head.sha);
     if (review === 'block') { say(`#${n}: the project review found a must-fix problem. Skipping until fixed.`); continue; }
     if (review === 'missing') { say(`#${n}: waiting for the project review of ${pr.head.sha.slice(0, 7)}.`); continue; }
 
+    // 2. Make sure it is tested on top of the current main. A PR that already contains main was tested
+    //    as it will land; one that is behind gets a queue test: CI merges main into it and tests that.
+    const { data: mainBranch } = await github.rest.repos.getBranch({ owner, repo, branch: pr.base.ref });
+    const mainSha = mainBranch.commit.sha;
+    const { data: cmp } = await github.rest.repos.compareCommitsWithBasehead({
+      owner, repo, basehead: `${mainSha}...${pr.head.sha}`,
+    });
     if (cmp.behind_by > 0) {
-      say(`#${n} is ${cmp.behind_by} commit(s) behind main: rebasing.`);
-      try {
-        const res = await github.graphql(
-          `mutation($id: ID!, $oid: GitObjectID!) {
-             updatePullRequestBranch(input: {pullRequestId: $id, expectedHeadOid: $oid, updateMethod: REBASE}) {
-               pullRequest { number headRefOid }
-             }
-           }`,
-          { id: pr.node_id, oid: pr.head.sha },
-        );
-        // The rebase only replays the reviewed changes on top of main, so the review carries over.
-        const newSha = res && res.updatePullRequestBranch.pullRequest.headRefOid;
-        if (newSha && newSha !== pr.head.sha && !docsOnly(files)) {
-          await github.rest.issues.createComment({
-            owner, repo, issue_number: n,
-            body: `Rebased onto \`main\` by the merge queue; the project review of ${pr.head.sha.slice(0, 7)} ` +
-              `carries over.\n<!-- project-review: PASS ${newSha} -->`,
-          });
-        }
-      } catch (e) {
-        say(`#${n} could not be rebased: ${e.message}`);
+      if (pr.mergeable === false) {
+        say(`#${n} conflicts with main.`);
         await github.rest.issues.addLabels({ owner, repo, issue_number: n, labels: [CONFLICT_LABEL] });
         await github.rest.issues.createComment({
           owner, repo, issue_number: n,
-          body: `The merge queue could not rebase this PR onto \`main\` (likely a conflict). ` +
-            `Rebase it by hand, push, then remove the \`${CONFLICT_LABEL}\` label to put it back in the queue.`,
+          body: `This PR conflicts with \`main\`, so the merge queue can't test it on top of \`main\`. ` +
+            `Update the branch by hand, push, then remove the \`${CONFLICT_LABEL}\` label to put it back in the queue.`,
         });
         continue;
       }
-      // Pushes made with GITHUB_TOKEN start no workflows, so start CI on the rebased branch ourselves.
-      await github.rest.actions.createWorkflowDispatch({ owner, repo, workflow_id: CI_WORKFLOW, ref: pr.head.ref });
-      say(`#${n} rebased; CI started on ${pr.head.ref}. Waiting for it.`);
-      break;
+      const { data: wf } = await github.rest.actions.listWorkflowRuns({
+        owner, repo, workflow_id: CI_WORKFLOW, head_sha: pr.head.sha, event: 'workflow_dispatch', per_page: 50,
+      });
+      const tested = queueTest(wf.workflow_runs, n, pr.head.sha, mainSha);
+      if (tested === 'failure') { say(`#${n} fails its tests on top of main ${mainSha.slice(0, 7)}. Skipping it.`); continue; }
+      if (tested === 'pending') { say(`#${n}: queue test on main ${mainSha.slice(0, 7)} running. Waiting.`); break; }
+      if (tested === 'missing') {
+        await github.rest.actions.createWorkflowDispatch({
+          owner, repo, workflow_id: CI_WORKFLOW, ref: pr.head.ref, inputs: { pr: String(n), base: mainSha },
+        });
+        say(`#${n} is ${cmp.behind_by} commit(s) behind main: started its queue test on main ${mainSha.slice(0, 7)}.`);
+        break;
+      }
+      say(`#${n} passed its queue test on main ${mainSha.slice(0, 7)}.`);
     }
 
-    // 2. Look at the checks on its head commit.
+    // 3. Look at the checks on its head commit.
     const runs = await github.paginate(github.rest.checks.listForRef, { owner, repo, ref: pr.head.sha, per_page: 100 });
     const state = checksState(runs);
     if (state === 'failure') { say(`#${n} has a failing check: skipping until it is fixed.`); continue; }
@@ -219,7 +238,7 @@ async function run({ github, context, core }) {
     }
     if (state === 'pending') { say(`#${n}: checks still running. Waiting.`); break; }
 
-    // 3. Green, current and eligible: merge it.
+    // 4. Green, current and eligible: merge it.
     if (pr.mergeable === false) { say(`#${n}: GitHub reports it cannot merge. Skipping.`); continue; }
     try {
       await github.rest.pulls.merge({
@@ -227,8 +246,17 @@ async function run({ github, context, core }) {
         commit_title: `${pr.title} (#${n})`,
       });
     } catch (e) { // one PR that can't merge must not stop the PRs behind it
-      say(`#${n} could not be merged: ${e.message.split('\n')[0]}. Skipping it.`);
-      summary.push(`#${n}: merge refused (${e.message.split('\n')[0]})`);
+      // Keep GitHub's whole answer: for "Repository rule violations found" the lines after it name the rule.
+      const why = e.message.trim();
+      say(`#${n} could not be merged: ${why}\nSkipping it.`);
+      summary.push(`#${n}: merge refused (${why.split('\n')[0]})`);
+      if (!comments.some((c) => (c.body || '').includes(REFUSED_MARKER(pr.head.sha)))) {
+        await github.rest.issues.createComment({
+          owner, repo, issue_number: n,
+          body: `GitHub refused the merge queue's merge of ${pr.head.sha.slice(0, 7)}:\n\n` +
+            `\`\`\`\n${why}\n\`\`\`\n\nThe queue skips this PR until that is fixed.\n${REFUSED_MARKER(pr.head.sha)}`,
+        });
+      }
       continue;
     }
     say(`#${n} merged.`);
@@ -254,5 +282,5 @@ async function run({ github, context, core }) {
 
 module.exports = {
   run, hasScreenshot, changedLines, eligibility, MAX_CHANGED_LINES, checksState, REQUIRED_CHECK, reviewState, docsOnly,
-  playLinksOnly, PLAY_LINKS_BRANCH, ciRunPending, parkedRuns,
+  playLinksOnly, PLAY_LINKS_BRANCH, ciRunPending, parkedRuns, queueTest, QUEUE_TEST_TITLE,
 };

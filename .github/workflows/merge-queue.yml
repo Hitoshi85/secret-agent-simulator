@@ -6,8 +6,9 @@ name: Merge queue
 # does not change workflow files, and has no `hold` label. Others wait for the owner.
 # It also needs a passing project review of its latest commit (a PR comment from the project's
 # Claude reviewer thread, see docs/REVIEW.md); PRs that only touch docs and images skip the review.
-# The script rebases the PR at the head of the queue onto main, re-runs CI, merges, deploys,
-# then moves on to the next PR. One-time setup: see docs/WORKFLOW.md.
+# The script tests the PR at the head of the queue merged with the current main (a queue test CI run,
+# without pushing to the PR branch), merges, deploys, then moves on to the next PR. CI wakes it when a
+# queue test finishes. One-time setup: see docs/WORKFLOW.md.
 on:
   pull_request_target:
     types: [opened, reopened, edited, labeled, unlabeled, ready_for_review, synchronize]
