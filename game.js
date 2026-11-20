@@ -94,7 +94,7 @@ function act(action, a, b, c) {
       teleport(agent, p.at, p.face); cam.yaw = agent.heading; cam.pitch = p.pitch ?? -0.05; state.map = false; show('map', false);
       updateCamera(camera, agent, 0, state.clock, true); toast(p.name); return true;
     }
-    case 'map': state.map = !state.map; show('map', state.map); if (state.map) navaids.drawBig(); return state.map;
+    case 'map': if (state.state === 'chase') return false; state.map = !state.map; show('map', state.map); if (state.map) navaids.drawBig(); return state.map;
     case 'pause': {
       if (state.state !== 'playing' && state.state !== 'chase') return false;
       state.paused = a === 'auto' ? true : !state.paused;
@@ -167,7 +167,7 @@ function step(dt) {
 }
 
 function render() {
-  if (state.state === 'chase') { chase.render(); stats.frames++; stats.calls = renderer.info.render.calls; stats.triangles = renderer.info.render.triangles; return; }
+  if (state.state === 'chase') { chase.render(); stats.frames++; stats.calls = renderer.info.render.calls; stats.triangles = renderer.info.render.triangles; stats.textures = renderer.info.memory.textures; return; }
   followSun(agent.x, agent.z);
   sky.position.copy(camera.position); // the sky always surrounds the camera
   renderer.render(scene, camera);
