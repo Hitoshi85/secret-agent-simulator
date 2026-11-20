@@ -34,6 +34,8 @@ folder and point the import map at it. No bundler.
 | `src/case/engine.js` | Case rules shared by every case, no 3D or page code: random thief, one-trait decoys, clues, the phone pattern, accusations, Heat |
 | `src/case/view.js` | A case in the city and on screen: witnesses, traces and suspects to tap, the case file, talk card, Notebook, phone puzzle, endings |
 | `src/case/quiz.js`, `seals.js`, `sealview.js` | Seal cases (`kind: 'seals'`, Case 02): question generators and checks; the rules (seals in any order, Heat, word guess); the seal board and question sheets |
+| `src/chase/land.js` | The opening car chase's countryside, one stage at a time: the road (samples, crests, cypress avenues), ground, farms, Pienza, Florence ahead, trees; `sampleRoad` |
+| `src/chase/cars.js` | The chase cars (original designs): the red two-door with brake lights, the black off-roader, oncoming traffic; each merged to one mesh per material |
 
 Performance on phones comes first: merge static geometry (`mergeByMaterial` or the builders in
 `buildings.js`), share materials, avoid per-frame allocations, and keep within the rendering budget

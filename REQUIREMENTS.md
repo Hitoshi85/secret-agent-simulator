@@ -8,8 +8,8 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 - **Play dev (latest main):** https://hitoshi85.github.io/secret-agent-simulator/dev/ (add `?v=<short commit>`
   on a phone to skip a cached copy; the current links with that suffix are always in [README.md](README.md))
 - **Backlog:** [open issues](https://github.com/Hitoshi85/secret-agent-simulator/issues)
-- **Mockups:** the agreed look (v2) and the case screens (case 01, case 02) are in [docs/mockups/](docs/mockups/)
-- **Last updated:** 2026-11-19
+- **Mockups:** the agreed look (v2), the case screens (case 01, case 02) and the Tuscany car chase are in [docs/mockups/](docs/mockups/)
+- **Last updated:** 2026-11-20
 
 ## 1. Core requirements
 
@@ -37,6 +37,7 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 | R18 | Cases are separate code, easy to swap and edit (Hitoshi's requirement, 2026-11-15): each case is one data file in `src/cases/` (text, traits, witnesses, traces, places), run by the shared engine in `src/case/`; `?case=<id>` picks one. | Done (#6) |
 | R19 | Finding leads without aimless walking (Hitoshi's feedback, 2026-11-16): gold arrows at the screen edge point to witnesses and traces not visited yet, showing only the distance, never who or what is there; and when you take the case, your handler's first lead arrives on the Phone. | Done (#12) |
 | R20 | Case 02, "The Compass Ledger" (Hitoshi's request, 2026-11-19): a separate art-mystery case with an original story (a fictional guild of Renaissance engineers and its hidden ledger). Six seals at landmarks, one per subject (world, art, military and technology history, mechanical and electrical engineering), open in any order; questions at high school to college level in mixed formats (multiple choice, put in order, cipher, match pairs, calculation, control logic). Every question is different each time: engineering questions and ciphers are generated, orderings and pairs are drawn from banks, facts come from a bank of 40 per subject, and seen questions are remembered on the phone. Wrong answers add Heat; each seal gives a letter of a hidden word that may be guessed after 4 of 6 seals; then fetch the ledger at the word's place. `?case=compass`. | Done (#16, #19) |
+| R21 | Opening car chase (Hitoshi's request, 2026-11-20, mockup docs/mockups/tuscany-chase.jpg): the game opens in Tuscany. In an original little red two-door you follow a black off-roader from Pienza through Val d'Orcia (cypress avenues, rolling hills), along the Siena road and through the Chianti hills to Florence: 3 stages of about a minute each. Pure driving: hold the left or right half of the screen to steer (keys: ← → or A D, Space / ↓ / S to brake), the car speeds up by itself, and brake lights glow while braking. Both cars top out near 140 km/h; yours is nimbler in bends and his is faster on straights. Air time over crests, two-way traffic, a speedometer, and a gold distance tag over his car. Keep him in sight: a meter drains while he is hidden and the stage restarts when it empties. Skip to Florence at any time; then the case starts on foot. | In progress (#24) |
 
 ### How we work
 
@@ -72,9 +73,6 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 
 | Date | Feedback / request from Hitoshi | Outcome |
 |---|---|---|
-| 2026-11-15 | "Build a secret agent simulator that is more cerebral than action based but still has international travel, driving expensive cars, and riding trains. Start with one city (Florence) … 3D … run on a browser on the phone." Review train-simulator first and ask how we work. | Reviewed Aozora Line's setup and asked workflow, then gameplay questions (rows below). R1, R3. |
-| 2026-11-15 | Workflow: clone the train-sim setup from day one; repo `secret-agent-simulator`; Three.js with no build step; all questions and approvals in the project chat, as clickable cards. | W2, W3, W5 to W13, R2; set up in #1. |
-| 2026-11-15 | Gameplay: tradecraft and deduction; stylized hand-built Florence; third person, tap to walk; present day; gadgets and hacking puzzles; drive the hills, walk the centre; the train as a playable scene; Heat and consequences; written case with a random culprit; about 15 minutes in one sitting; mockups then a walkable slice; your own agent. | R3, R6, R8, R11 to R17. |
 | 2026-11-15 | Look mockup v1 (Duomo, Ponte Vecchio at dusk): "More detail first". | Mockup v2: richer facades, life-size people, an agent close-up. |
 | 2026-11-15 | Mockup v2: "Build it as shown". | Built the walkable slice from the Duomo to Ponte Vecchio and Oltrarno in #1 (R2 to R10). |
 | 2026-11-15 | Main is protected now, so the deploy could not push the README play-links update. Chose "Open a small PR instead". | The links job opens a `bot/play-links` PR that the merge queue merges with no screenshot, review or deploy; #2. |
@@ -92,6 +90,9 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 | 2026-11-20 | "What happened to CI / Lint test" (the required check never ran after the merge queue rebased #16). | The queue's own pushes do not start pull_request CI, so new commits were pushed to run it; a test-order bug and one runner timeout were fixed or rerun, and Hitoshi merged #16 by hand. The full banks follow in #19. |
 | 2026-11-20 | PR #16 sat in the merge queue overnight, then GitHub refused the queue's merge. "How do we make sure this doesn't happen again?" | The queue no longer pushes to PR branches: it tests a PR merged with the current `main` in CI, CI wakes the queue when done, refused merges are commented in full, CI timeout 30 minutes; #17. |
 | 2026-11-20 | 800-line limit for automatic merges: chose "Keep 800, use automerge label". | No change: Claude asks for the `automerge` label on a bigger PR, and the queue then takes it (W6). |
+| 2026-11-20 | "Create mockups for a car chase in Tuscany with a Fiat. Base on scenery in Val d'Orcia and Pienza." Cards: pure driving chase; Tuscany to Florence ("Start with a chase from Tuscany to Florence"); classic red; hold the screen sides to steer; keep them in sight; 6 screens; "Chase a black Mercedes G wagon"; "Show brake lights when brake is pressed". | 6 mockup screens with an original small red car and a boxy black off-roader (not a copy of either real car). |
+| 2026-11-20 | Mockup feedback: "Show distance from other car. Make the cars look a bit more real with detail." Tag over the car; about 3 minutes (a minute a stage); movie-fast, close match near 140 km/h; "Get some air time due to hills"; "2 way traffic". | Mockup revised to 7 screens; saved as docs/mockups/tuscany-chase.jpg. |
+| 2026-11-20 | "Build". Cards: chase first with a Skip; keyboard arrows or A D and Space to brake. | R21, issue #23: scenery and cars in #24, driving and the title flow next. |
 
 ## 4. Open backlog
 
@@ -104,8 +105,9 @@ Add the `ready` label to an issue to start it.
 | #11 | Speed up the dossier case: running, lead arrows, maps, handler's first lead (R6, R9, R19) | In progress (#12) |
 | – | Station chase when the thief gets away (R14, R15) | To file |
 | #15 | Case 02, The Compass Ledger: seals, question generators, fact bank (R20) | Done (#16, #19) |
+| #23 | Opening car chase, Pienza to Florence (R21) | In progress (#24) |
 
 ## 5. Ideas mentioned, not yet requested
 
 - More cities linked by train (R14).
-- Cars to choose and drive in the Tuscan hills (R13).
+- Cars to choose and drive in the Tuscan hills (R13); the opening chase (R21) is the first driving.
