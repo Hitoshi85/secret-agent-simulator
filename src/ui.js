@@ -51,7 +51,7 @@ export function setupUI({ canvas, act, onTap, onDrag }) {
     if (k === 'm') return act('map');
     if (k === 'n') return act('notebook');
     if (k === 'f') return act('feedback');
-    if (k === 'enter') return act('start');
+    if (k === 'enter') return act('chase');
     keys.add(k);
   });
   addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));

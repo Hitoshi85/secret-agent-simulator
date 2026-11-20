@@ -153,3 +153,60 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1612; col
 .slotline { display: flex; gap: 6px; margin: 6px 0; }
 .slotline span { flex: 1; height: 34px; border-radius: 8px; border: 2px dashed #c9b896; font: 700 19px/30px Georgia, serif; text-align: center; color: #262019; }
 .slotline span:not(:empty) { background: #c9a24a; border-color: #c9a24a; }
+
+/* The opening car chase (src/chase/chase.js): steering zones, speedometer, Brake, the gap tag, the In Sight meter and the cards. */
+#cSight, #chase, .chasehelp { display: none; }
+body.chasing #cSight { display: block; font-size: 11px; letter-spacing: 1px; min-width: 120px; }
+body.chasing #chase:not([hidden]) { display: block; }
+body.chasing #heat, body.chasing #touch, body.chasing #mini, body.chasing #leads, body.chasing #hint, body.chasing #run, body.chasing .help:not(.chasehelp) { display: none; }
+body.chasing .chasehelp { display: block; }
+@media (hover: none), (pointer: coarse) { body.chasing .chasehelp { display: none; } }
+#cSight #cSightN { float: right; }
+#cSight .bar { width: auto; }
+#cSight .bar i { background: linear-gradient(90deg, #7fb069, #e8c45c); }
+#cSight.alarm { box-shadow: 0 0 0 2px #d9502f; }
+#cSight.alarm #cSightL { color: #ff8a6a; }
+#cSight.alarm .bar i { background: linear-gradient(90deg, #d9502f, #e8b04a); }
+#chase { position: absolute; inset: 0; pointer-events: none; }
+#chase .steer { position: absolute; top: 45%; bottom: 0; width: 50%; }
+#chase .steer.l { left: 0; background: linear-gradient(90deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, 0)); }
+#chase .steer.r { right: 0; background: linear-gradient(270deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, 0)); }
+#chase .steer.l.on { background: linear-gradient(90deg, rgba(232, 196, 92, .25), rgba(232, 196, 92, 0)); }
+#chase .steer.r.on { background: linear-gradient(270deg, rgba(232, 196, 92, .25), rgba(232, 196, 92, 0)); }
+#chase .steer b { position: absolute; bottom: calc(150px + env(safe-area-inset-bottom)); width: 64px; height: 64px; border-radius: 50%; border: 2px solid rgba(243, 238, 228, .6); background: rgba(16, 20, 27, .4); color: #f3eee4; font-size: 22px; line-height: 60px; text-align: center; }
+#chase .steer span { position: absolute; bottom: calc(132px + env(safe-area-inset-bottom)); width: 64px; text-align: center; font-size: 10px; letter-spacing: 1px; opacity: .8; }
+#chase .steer.l b, #chase .steer.l span { left: 18px; }
+#chase .steer.r b, #chase .steer.r span { right: 18px; }
+#chase .steer.on b { background: #e8c45c; color: #1b1f26; border-color: #e8c45c; }
+#cSpeedo { position: absolute; left: 8px; bottom: calc(12px + env(safe-area-inset-bottom)); width: 104px; height: 104px; }
+#cBrake { position: absolute; left: 58%; transform: translateX(-50%); bottom: calc(22px + env(safe-area-inset-bottom)); width: 140px; min-height: 54px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, .25); background: rgba(16, 20, 27, .86); color: #fff; font: 700 16px -apple-system, Helvetica, sans-serif; pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; }
+#cBrake.on { background: #c0291e; border-color: #ff7a5a; box-shadow: 0 0 22px rgba(255, 58, 34, .55); }
+.ctag { position: absolute; left: 0; top: 0; background: rgba(16, 20, 27, .86); border: 2px solid #e8c45c; color: #e8c45c; border-radius: 12px; padding: 3px 9px; font: 800 14px -apple-system, Helvetica, sans-serif; white-space: nowrap; }
+.ctag::after { content: ""; position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); border: 6px solid transparent; border-top-color: #e8c45c; }
+.ctag.edge::after { display: none; }
+.cpill { position: absolute; left: 50%; transform: translateX(-50%); top: calc(118px + env(safe-area-inset-top)); border-radius: 16px; padding: 8px 14px; font: 700 14px -apple-system, Helvetica, sans-serif; white-space: nowrap; }
+.cpill.red { background: #a8322a; color: #fff; }
+.cpill.air { background: #e8c45c; color: #1b1f26; letter-spacing: 2px; }
+.cpill[hidden] { display: none; }
+#chaseCard { background: rgba(15, 12, 10, .25); align-items: flex-end; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+.sheet.chasecard h2 { font-size: 24px; }
+.chasecard .gadget { background: #0e1218; color: #e6ebf2; margin: -20px -22px; padding: 18px; border-radius: 18px; }
+.chasecard .gadget .kicker { color: #e8c45c; }
+.chasecard .msg { background: #1c232e; color: #dfe5ee; border-radius: 14px; padding: 10px 12px; font-size: 14.5px; }
+.chasecard .msg b { color: #e8c45c; }
+.chasecard .gadget .small { color: #9aa4b5; font-size: 12.5px; }
+.chasecard .gadget button { background: #e8c45c; color: #1b1f26; font-weight: 700; }
+.chasecard .gadget button.close { background: #2a3240; color: #e6ebf2; }
+.chasecard button { background: #c9a24a; color: #1b1f26; font-weight: 700; }
+.route { display: flex; align-items: center; margin: 12px 0 4px; }
+.route i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #8a6d2c; background: #f4ecdc; flex: none; }
+.route i.on { background: #c9a24a; border-color: #c9a24a; }
+.route u { flex: 1; height: 3px; background: #d8c9a8; }
+.rl { display: flex; justify-content: space-between; font-size: 10.5px; color: #6b5f4c; font-weight: 600; margin-bottom: 6px; }
+.stat { display: flex; justify-content: space-between; border-top: 1px solid #e0d4bb; padding: 6px 0; margin: 0 !important; }
+.stamp.ok { border-color: #3f7d4a; color: #3f7d4a; }
+#title .sheet button.close { background: #c9b8a0; color: #2a2118; }
+body.chasing .chasehelp { top: calc(170px + env(safe-area-inset-top)); bottom: auto; }
+#chase.carded > * { display: none; }
+#cCount { position: absolute; top: 28%; left: 0; right: 0; text-align: center; font: 96px Georgia, serif; color: #fff; text-shadow: 0 4px 18px rgba(0, 0, 0, .55); }
+.routemap { display: block; width: 100%; max-width: 240px; margin: 4px auto 8px; }
