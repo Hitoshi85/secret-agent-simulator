@@ -69,6 +69,22 @@ test('braking slows the car and lights the brake lamps; losing him ends the stag
   expect(errors).toEqual([]);
 });
 
+test('M does not open the Florence map mid-chase, and reloading a stage frees its textures', async ({ page }) => {
+  const errors = await open(page);
+  const r = await page.evaluate(() => {
+    const A = window.__agent, C = A.chase;
+    const map = A.act('map');
+    A.step(1 / 30); A.render(); C.action('retry'); A.step(1 / 30); A.render();
+    const t0 = A.stats.textures;
+    for (let i = 0; i < 3; i++) { C.action('retry'); A.step(1 / 30); A.render(); }
+    return { map, open: A.state.map, t0, t1: A.stats.textures };
+  });
+  expect(r.map).toBe(false);
+  expect(r.open).toBe(false);
+  expect(r.t1, 'retries do not pile up textures').toBeLessThanOrEqual(r.t0);
+  expect(errors).toEqual([]);
+});
+
 test('Skip to Florence leaves the chase and opens the case in Florence', async ({ page }) => {
   await page.goto('/index.html');
   await page.waitForFunction(() => window.__agent && window.__agent.stats.frames > 2, null, { timeout: 60000 });

@@ -36,7 +36,10 @@ export function makeChase({ renderer, onDone, toast }) {
   const input = { left: 0, right: 0, keys: { left: false, right: false, brake: false }, brakeBtn: false };
 
   function load(k) {
-    if (c.world) { scene.remove(c.world.group); c.world.group.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
+    if (c.world) { scene.remove(c.world.group); c.world.group.traverse((o) => {
+      if (o.geometry) o.geometry.dispose();
+      for (const m of [].concat(o.material || [])) { if (m.map) m.map.dispose(); m.dispose(); }
+    }); }
     c.world = buildStage(k); c.road = c.world.road; scene.add(c.world.group);
     c.stage = k; c.player = newCar(10, 1.1); c.player.v = 28; c.suv = newCar(55, 1.1); c.suv.v = 34;
     c.player.y = sampleRoad(c.road, 10, r1).y; c.suv.y = sampleRoad(c.road, 55, r1).y;
