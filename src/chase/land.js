@@ -183,7 +183,11 @@ export function buildStage(k) {
   // ground height anywhere: the road near it, the hills beyond (used to place trees and buildings)
   let hint = 0;
   const H = (x, z) => {
-    hint = locate(road, x, z, hint); if (Math.abs(hint - locate(road, x, z, 0)) > 120) hint = locate(road, x, z, 0);
+    hint = locate(road, x, z, hint);
+    if ((road.x[hint] - x) ** 2 + (road.z[hint] - z) ** 2 > 3600) { // more than 60 m from where we looked: search the whole road coarsely, then refine
+      let b = 1e18; for (let i = 0; i < road.n; i += 20) { const d = (road.x[i] - x) ** 2 + (road.z[i] - z) ** 2; if (d < b) { b = d; hint = i; } }
+      hint = locate(road, x, z, hint);
+    }
     const i = hint, d = Math.hypot(road.x[i] - x, road.z[i] - z);
     return THREE.MathUtils.lerp(road.y[i], baseH(st, x, z), THREE.MathUtils.smoothstep(d, 4.5, 60));
   };

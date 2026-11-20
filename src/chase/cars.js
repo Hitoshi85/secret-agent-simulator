@@ -70,7 +70,8 @@ export function makeCar(col = '#a81c16') {
   add(car, new THREE.ExtrudeGeometry(roof, { depth: 1.12, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.04, bevelSegments: 4, curveSegments: 10 }), paint, 0, 0, 0).geometry.translate(0, 0, -0.56);
   // folding canvas top with ribs
   add(car, rbox(0.66, 0.05, 0.84, 0.02, 0.015), cream, -0.24, 1.5, 0);
-  for (let k = 0; k < 4; k++) add(car, new THREE.BoxGeometry(0.03, 0.03, 0.84), new THREE.MeshStandardMaterial({ color: '#d6cab0' }), -0.5 + k * 0.17, 1.53, 0);
+  const rib = new THREE.MeshStandardMaterial({ color: '#d6cab0' });
+  for (let k = 0; k < 4; k++) add(car, new THREE.BoxGeometry(0.03, 0.03, 0.84), rib, -0.5 + k * 0.17, 1.53, 0);
   for (const s of [-1, 1]) {
     add(car, new THREE.BoxGeometry(0.06, 0.46, 0.05), paint, 0.48, 1.13, s * 0.6, 0, 0, 0.62);   // A pillar
     add(car, new THREE.BoxGeometry(0.07, 0.46, 0.05), paint, -0.2, 1.14, s * 0.6);                 // B pillar
@@ -185,8 +186,9 @@ export function makeTraffic(kind, col = '#e9e6dc') {
     add(car, rbox(1.1, 1.2, 1.25, 0.18, 0.05), paint, 0.9, 1.05, 0);
     add(car, new THREE.BoxGeometry(0.03, 0.5, 1.05), glass, 1.46, 1.3, 0, 0, 0, -0.15);
     add(car, new THREE.BoxGeometry(1.7, 0.08, 1.35), plastic, -0.55, 0.62, 0);
-    for (const s of [-1, 1]) add(car, new THREE.BoxGeometry(1.7, 0.35, 0.05), new THREE.MeshStandardMaterial({ color: '#7a5a3a' }), -0.55, 0.82, s * 0.66);
-    add(car, new THREE.BoxGeometry(0.05, 0.35, 1.35), new THREE.MeshStandardMaterial({ color: '#7a5a3a' }), -1.4, 0.82, 0);
+    const wood = new THREE.MeshStandardMaterial({ color: '#7a5a3a' });
+    for (const s of [-1, 1]) add(car, new THREE.BoxGeometry(1.7, 0.35, 0.05), wood, -0.55, 0.82, s * 0.66);
+    add(car, new THREE.BoxGeometry(0.05, 0.35, 1.35), wood, -1.4, 0.82, 0);
     const bale = new THREE.CylinderGeometry(0.45, 0.45, 1.0, 14); bale.rotateX(Math.PI / 2); add(car, bale, new THREE.MeshLambertMaterial({ color: '#d4a64f' }), -0.6, 1.1, 0);
     add(car, rbox(0.05, 0.14, 0.14, 0.05, 0.01), M.lamp, 1.47, 0.85, 0);
     wheel(car, 1.1, 0.27, 0, 0.27, 0.14, 1, false);

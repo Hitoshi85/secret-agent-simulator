@@ -24,8 +24,10 @@ test('three stages and the cars build, and a chase view stays within the phone b
     let view = null;
     for (const k of [0, 1, 2]) {
       const { group, road } = buildStage(k);
-      let cyp = 0; for (let i = 0; i < road.n; i++) cyp += road.cyp[i];
-      stages.push({ end: road.end, len: road.len, crests: road.crests.length, cypressMetres: cyp * 2, city: !!road.city });
+      let cyp = 0, off = 0; for (let i = 0; i < road.n; i++) cyp += road.cyp[i];
+      // Ground height beside the road matches the road all the way along (trees stand on the ground).
+      for (let i = 0; i < road.n; i += 7) { const x = road.x[i] - Math.cos(road.dir[i]) * 3, z = road.z[i] + Math.sin(road.dir[i]) * 3; off = Math.max(off, Math.abs(road.H(x, z) - road.y[i])); }
+      stages.push({ end: road.end, len: road.len, crests: road.crests.length, cypressMetres: cyp * 2, city: !!road.city, off });
       if (k === 0) view = { group, road };
     }
     // A view down the first stage: the red car behind the off-roader, rendered like the game does.
@@ -55,6 +57,7 @@ test('three stages and the cars build, and a chase view stays within the phone b
     expect(s.len, 'the road runs on past the finish').toBeGreaterThan(s.end + 100);
     expect(s.crests, 'crests for air time').toBeGreaterThanOrEqual(2);
     expect(s.cypressMetres, 'cypress avenues').toBeGreaterThan(400);
+    expect(s.off, 'ground beside the road follows the road').toBeLessThan(0.5);
   }
   expect(r.stages.map((s) => s.city)).toEqual([false, false, true]);
   expect(r.calls).toBeLessThanOrEqual(250);
