@@ -101,3 +101,29 @@ test('docs-only PRs need no review', () => {
   expect(q.docsOnly([{ filename: 'REQUIREMENTS.md' }, { filename: 'game.js' }])).toBe(false);
   expect(q.docsOnly([])).toBe(false);
 });
+
+test('queue tests: a PR behind main is tested merged with the current main, found by run name', () => {
+  const head = 'h'.repeat(40);
+  const main1 = 'a'.repeat(40);
+  const main2 = 'b'.repeat(40);
+  const r = (id, base, status, conclusion, over = {}) => ({
+    id, event: 'workflow_dispatch', head_sha: head, display_title: q.QUEUE_TEST_TITLE(16, base), status, conclusion, ...over,
+  });
+  expect(q.QUEUE_TEST_TITLE(16, main1)).toBe(`Queue test of #16 on main ${main1}`);
+  expect(q.queueTest([], 16, head, main1)).toBe('missing');
+  expect(q.queueTest([r(1, main1, 'in_progress', null)], 16, head, main1)).toBe('pending');
+  expect(q.queueTest([r(1, main1, 'completed', 'success')], 16, head, main1)).toBe('success');
+  expect(q.queueTest([r(1, main1, 'completed', 'failure')], 16, head, main1)).toBe('failure');
+  // A test on an older main does not count once main moves; the newest run on this main wins.
+  expect(q.queueTest([r(1, main1, 'completed', 'success')], 16, head, main2)).toBe('missing');
+  expect(q.queueTest([r(1, main2, 'completed', 'cancelled'), r(2, main2, 'completed', 'success')], 16, head, main2)).toBe('success');
+  // Other commits, other PRs and ordinary CI runs are not queue tests.
+  expect(q.queueTest([r(1, main1, 'completed', 'success', { head_sha: 'c'.repeat(40) })], 16, head, main1)).toBe('missing');
+  expect(q.queueTest([r(1, main1, 'completed', 'success', { display_title: q.QUEUE_TEST_TITLE(17, main1) })], 16, head, main1)).toBe('missing');
+  expect(q.queueTest([r(1, main1, 'completed', 'success', { event: 'pull_request' })], 16, head, main1)).toBe('missing');
+});
+
+test('the CI job that wakes the queue is not waited on', () => {
+  const ok = { id: 1, name: q.REQUIRED_CHECK, status: 'completed', conclusion: 'success' };
+  expect(q.checksState([ok, { id: 2, name: 'Wake the merge queue', status: 'in_progress' }])).toBe('success');
+});

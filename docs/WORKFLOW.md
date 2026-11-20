@@ -23,9 +23,12 @@
    change `.github/workflows/`, and it has no `hold` label. For the PR at the head of the queue it
    waits for a passing **project review** of its latest commit (a Claude thread in the project reviews
    the diff and posts its verdict as a PR comment, see `docs/REVIEW.md`; docs-only PRs skip it),
-   rebases onto `main` if needed, re-runs CI on the rebased commit, waits until every check
-   has passed, then squash-merges it and deletes the branch. A PR with
-   a failing check is skipped until fixed; one that cannot be rebased gets `queue-conflict`.
+   tests it merged with the current `main` if it is behind (a "queue test": a CI run on the PR branch
+   that merges `main` in first; the queue never pushes to PR branches, so the reviewed commit stays the
+   head), waits until every check has passed, then squash-merges it and deletes the branch. CI wakes
+   the queue when a queue test finishes. A PR with a failing check or queue test is skipped until fixed;
+   one that conflicts with `main` gets `queue-conflict`. If GitHub refuses a merge, the queue comments
+   GitHub's full reason on the PR once.
    The rules live in `.github/scripts/merge-queue.js` (tested in `tests/merge-queue.spec.js`).
 5. **Deploy to dev, Ship to prod.** `.github/workflows/pages.yml` serves two copies of the game on
    one Pages site: **prod** at `https://hitoshi85.github.io/secret-agent-simulator/` and **dev** at
@@ -60,7 +63,8 @@
 
 - Settings → Pages → Source: **GitHub Actions** (so deploys go through the tested workflow).
 - Settings → Branches → protect `main`: require the **Lint and smoke test** check to pass. Do not
-  require approving reviews (the queue cannot approve its own merges).
+  require approving reviews, approval of the most recent push, or branches to be up to date (the queue
+  cannot approve its own merges, and it tests PRs on top of `main` itself).
 - Settings → Actions → General → Workflow permissions: **Read and write permissions** (the queue
   rebases branches, merges and starts workflows with the built-in token).
 - Settings → General → Pull Requests: tick **Automatically delete head branches** (optional).

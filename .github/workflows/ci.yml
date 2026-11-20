@@ -1,10 +1,24 @@
 name: CI
+# The merge queue starts a "queue test" through workflow_dispatch with `pr` and `base` set: the run merges
+# main's commit `base` into the PR branch, tests the result and is named after both, so the queue can find it.
+run-name: >-
+  ${{ inputs.base && format('Queue test of #{0} on main {1}', inputs.pr, inputs.base)
+  || github.event.pull_request.title || github.event.head_commit.message || 'CI' }}
 
 on:
   pull_request:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      pr:
+        description: PR number (merge queue only)
+        required: false
+        default: ''
+      base:
+        description: Commit of main to merge in before testing (merge queue only)
+        required: false
+        default: ''
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -14,9 +28,20 @@ jobs:
   check:
     name: Lint and smoke test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # A full run takes 10 to 14 minutes on a typical runner; slow runners need the headroom.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ inputs.base && '0' || '1' }}
+      - name: Merge main into the PR (merge queue test)
+        if: inputs.base != ''
+        env:
+          BASE: ${{ inputs.base }}
+        run: |
+          git fetch --no-tags origin "$BASE"
+          git -c user.name=merge-queue -c user.email=merge-queue@users.noreply.github.com \
+            merge --no-edit FETCH_HEAD
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -31,6 +56,7 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Smoke, phone screenshot and rendering-budget tests
+        timeout-minutes: 20
         run: npm test
       - name: Upload phone screenshots
         if: always()
@@ -44,6 +70,7 @@ jobs:
       - name: Phone screenshots of main, for comparison
         if: always() && github.event_name == 'pull_request'
         continue-on-error: true
+        timeout-minutes: 8
         run: |
           git fetch --depth=1 origin "${{ github.base_ref }}"
           git worktree add main-src FETCH_HEAD
@@ -65,3 +92,18 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  # Runs started by the merge queue (with its built-in token) fire no workflow_run event, so nothing
+  # would tell the queue they finished. Starting a workflow is the one thing that token may do.
+  wake-queue:
+    name: Wake the merge queue
+    needs: check
+    if: always() && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run merge-queue.yml --repo "$GITHUB_REPOSITORY" --ref main
