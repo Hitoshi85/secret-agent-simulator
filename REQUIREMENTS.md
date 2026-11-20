@@ -90,6 +90,7 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 | 2026-11-19 | "Every question should be different each time." Chose "40 per subject" for the first fact bank. | Generated engineering and cipher questions, drawn orderings and pairs, seen-question memory on the phone. |
 | 2026-11-19 | Approved the design with "Drop the early-guess finale", then: "Actually must answer 4 of 6 before guess". | The word may be guessed once 4 of 6 seals are broken (wrong guess adds Heat); saved as docs/mockups/case-02-compass.png. |
 | 2026-11-20 | PR #16 sat in the merge queue overnight, then GitHub refused the queue's merge. "How do we make sure this doesn't happen again?" | The queue no longer pushes to PR branches: it tests a PR merged with the current `main` in CI, CI wakes the queue when done, refused merges are commented in full, CI timeout 30 minutes; #17. |
+| 2026-11-20 | 800-line limit for automatic merges: chose "Keep 800, use automerge label". | No change: Claude asks for the `automerge` label on a bigger PR, and the queue then takes it (W6). |
 
 ## 4. Open backlog
 
