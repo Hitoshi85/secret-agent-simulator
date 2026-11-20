@@ -14,6 +14,7 @@ import { pickCase } from './src/cases/index.js';
 import { makeCaseView } from './src/case/view.js';
 import { makeSealView } from './src/case/sealview.js';
 import { makeNavaids } from './src/navaids.js';
+import { makeChase } from './src/chase/chase.js';
 
 const VERSION = new URL(import.meta.url).searchParams.get('v') || 'local';
 const REPO = 'https://github.com/hitoshi85/secret-agent-simulator';
@@ -43,9 +44,11 @@ marker.rotation.x = -Math.PI / 2; marker.position.y = 0.04; scene.add(marker);
 const state = { state: 'title', paused: false, map: false, area: areaAt(...START.at), clock: 0 };
 const stats = { frames: 0, calls: 0, triangles: 0, people: crowd.length, buildings: city.userData.count, lastWalkFound: null };
 
+let chase = null; // the opening car chase, built the first time it starts
 function resize() {
   const w = innerWidth, h = innerHeight;
   renderer.setSize(w, h, false); fitCamera(camera, w, h);
+  if (chase) chase.resize(w, h);
 }
 addEventListener('resize', resize); resize();
 
@@ -71,6 +74,11 @@ function approach(t, run = false) {
 
 function act(action, a, b, c) {
   switch (action) {
+    case 'chase': {
+      if (state.state !== 'title') return false;
+      if (!chase) { chase = makeChase({ renderer, toast, onDone: () => { state.state = 'title'; act('start'); } }); chase.resize(innerWidth, innerHeight); }
+      state.state = 'chase'; show('title', false); chase.start(); return true;
+    }
     case 'start': if (state.state === 'title') { state.state = 'playing'; show('title', false); caseView.caseFile(); } return true;
     case 'walkTo': {
       if (state.state !== 'playing') return false;
@@ -88,9 +96,10 @@ function act(action, a, b, c) {
     }
     case 'map': state.map = !state.map; show('map', state.map); if (state.map) navaids.drawBig(); return state.map;
     case 'pause': {
-      if (state.state !== 'playing') return false;
+      if (state.state !== 'playing' && state.state !== 'chase') return false;
       state.paused = a === 'auto' ? true : !state.paused;
       show('paused', state.paused);
+      if (chase) chase.pauseMap(state.state === 'chase' && state.paused);
       document.getElementById('pause').textContent = state.paused ? '▶' : '❚❚';
       return state.paused;
     }
@@ -132,6 +141,7 @@ const readKeys = setupUI({ canvas, act, onTap, onDrag: (dx, dy) => { cam.yaw -= 
 
 // Advances the simulation by dt seconds (does nothing while paused or on the title).
 function step(dt) {
+  if (state.state === 'chase') { if (!state.paused) chase.step(dt, innerWidth, innerHeight); return; }
   if (state.state !== 'playing' || state.paused || state.map || caseView.sheetOpen()) { updateCamera(camera, agent, dt, state.clock); return; }
   state.clock += dt;
   const k = readKeys();
@@ -157,6 +167,7 @@ function step(dt) {
 }
 
 function render() {
+  if (state.state === 'chase') { chase.render(); stats.frames++; stats.calls = renderer.info.render.calls; stats.triangles = renderer.info.render.triangles; return; }
   followSun(agent.x, agent.z);
   sky.position.copy(camera.position); // the sky always surrounds the camera
   renderer.render(scene, camera);
@@ -180,7 +191,7 @@ requestAnimationFrame(frame);
 // Test hook (see CLAUDE.md). Keep it working when refactoring; add to it for new features.
 window.__agent = {
   state, stats, agent, crowd, act, step, render, cam, PLACES,
-  get case() { return caseView.c; }, caseView, navaids,
+  get case() { return caseView.c; }, caseView, navaids, get chase() { return chase; },
   get paused() { return loop.paused; }, set paused(v) { loop.paused = v; last = performance.now(); },
   setPaused(v) { if (!!v !== state.paused) act('pause'); },
   walkable, findPath, areaAt, version: VERSION,

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1b1612">
 <title>Secret Agent Simulator · Florence</title>
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=8">
 <script type="importmap">
 { "imports": {
   "three": "./vendor/three-0.187.0/three.module.js",
@@ -19,6 +19,7 @@
   <div class="top">
     <div id="loc" class="panel"><b id="locName">Piazza del Duomo</b><span id="locSub">Firenze · 17:40</span></div>
     <div class="right">
+      <div id="cSight" class="panel"><span id="cSightL">IN SIGHT</span> <span id="cSightN"></span><div class="bar"><i id="cSightBar" style="width:100%"></i></div></div>
       <div id="heat" class="panel" title="Heat: wrong accusations so far">HEAT <span id="heatN">0 / 3</span><div class="bar"><i id="heatBar" style="width:4%"></i></div></div>
       <div class="small">
         <button id="pause" class="chip" type="button" aria-label="Pause">❚❚</button>
@@ -32,11 +33,20 @@
   <div id="hint">Tap to walk · double-tap to run · drag to look</div>
   <div id="toast" role="status"></div>
   <div id="talk" class="talk" hidden><p id="talkWho" class="kicker"></p><p id="talkText"></p><p id="talkNote" class="note"></p><button type="button" class="x" data-case="talk" aria-label="Close">✕</button></div>
+  <div id="chase" hidden>
+    <div class="steer l"><b>◀</b><span>HOLD</span></div><div class="steer r"><b>▶</b><span>HOLD</span></div>
+    <div id="cPill" class="cpill" hidden></div>
+    <div id="cCount"></div>
+    <div id="cTag" class="ctag"></div>
+    <canvas id="cSpeedo" aria-label="Speedometer"></canvas>
+    <button id="cBrake" type="button">Brake</button>
+  </div>
   <div id="touch">
     <button type="button" data-act="phone">📱 Phone</button>
     <button type="button" data-act="notebook">📓 Notebook</button>
     <button type="button" data-act="map">🗺 Map</button>
   </div>
+  <p class="help chasehelp">Chase: ← → or A D to steer · Space, ↓ or S to brake · P pause</p>
   <p class="help">Tap or click to walk · drag to look · W A S D or arrows to walk · Shift to run · Q / E turn · N notebook · M map · P pause · F feedback</p>
 </div>
 <div id="map" class="overlay bigmap" hidden>
@@ -44,16 +54,18 @@
   <div id="mapHead"><h2>Florence</h2><p>Leads in gold, visited ones hollow. Tap a place below to go there.</p></div>
   <div id="mapGo"><div id="places"></div><button type="button" class="close" data-act="map">Close</button></div>
 </div>
-<div id="paused" class="overlay" hidden><div class="sheet"><h2>Paused</h2><button type="button" data-act="pause">▶ Resume</button></div></div>
+<div id="paused" class="overlay" hidden><div class="sheet"><h2>Paused</h2><div id="pausedMap"></div><button type="button" data-act="pause">▶ Resume</button></div></div>
 <div id="casesheet" class="overlay" hidden><div id="caseBody" class="sheet case"></div></div>
+<div id="chaseCard" class="overlay" hidden><div id="chaseBody" class="sheet case chasecard"></div></div>
 <div id="title" class="overlay">
   <div class="sheet">
     <p class="kicker">Secret Agent Simulator</p>
     <h1>Florence</h1>
-    <p>A case is waiting in the centre, between the Duomo and Ponte Vecchio. Tradecraft over gunplay.</p>
-    <button type="button" id="start" data-act="start">Begin</button>
+    <p>It starts in Tuscany: a black off-roader is leaving Pienza for Florence, and you have a little red car. Then a case waits in the centre. Tradecraft over gunplay.</p>
+    <button type="button" id="begin" data-act="chase">Begin</button>
+    <button type="button" id="start" class="close" data-act="start">Skip to Florence</button>
   </div>
 </div>
-<script type="module" src="game.js?v=7"></script>
+<script type="module" src="game.js?v=8"></script>
 </body>
 </html>

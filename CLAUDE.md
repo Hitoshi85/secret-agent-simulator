@@ -36,6 +36,8 @@ folder and point the import map at it. No bundler.
 | `src/case/quiz.js`, `seals.js`, `sealview.js` | Seal cases (`kind: 'seals'`, Case 02): question generators and checks; the rules (seals in any order, Heat, word guess); the seal board and question sheets |
 | `src/chase/land.js` | The opening car chase's countryside, one stage at a time: the road (samples, crests, cypress avenues), ground, farms, Pienza, Florence ahead, trees; `sampleRoad` |
 | `src/chase/cars.js` | The chase cars (original designs): the red two-door with brake lights, the black off-roader, oncoming traffic; each merged to one mesh per material |
+| `src/chase/drive.js` | Chase rules, no 3D or page code: the red car's steering, brake, crashes and air time, the off-roader's driving, oncoming traffic, the In Sight meter |
+| `src/chase/chase.js` | The chase on screen: its own scene and camera, stages, the handler call and cards, the 3-2-1 count, HUD (speedometer, Brake, gap tag, In Sight), the route map when paused, touch and keys |
 
 Performance on phones comes first: merge static geometry (`mergeByMaterial` or the builders in
 `buildings.js`), share materials, avoid per-frame allocations, and keep within the rendering budget
@@ -84,7 +86,8 @@ checked by `tests/phone-checks.spec.js` (250 draw calls, 400k triangles, 4 ms of
 `game.js` exposes `window.__agent` for tests: `state` (`state` title/playing, `paused`, `map`, `area`, `clock`),
 `stats` (`frames`, `calls` and `triangles` of the last render, `people`, `buildings`, `lastWalkFound`),
 `agent` (`x`, `z`, `heading`, `path`, `walking`, `walked`), `crowd` (each `mesh`), `cam` (`yaw`, `pitch`),
-`act(action, ...)` (`start`, `walkTo` x z run, `jump` place-id, `map`, `pause`, `phone`, `notebook`, `close`, `briefed` (case file taken: the handler's lead), `interact` kind id, `accuse` suspect-id, `dot` 0-8, `answer` value and `guess` word (seal cases), `again`, `feedback`, `turn` radians),
+`act(action, ...)` (`chase` (Begin: the opening car chase), `start` (Florence), `walkTo` x z run, `jump` place-id, `map`, `pause`, `phone`, `notebook`, `close`, `briefed` (case file taken: the handler's lead), `interact` kind id, `accuse` suspect-id, `dot` 0-8, `answer` value and `guess` word (seal cases), `again`, `feedback`, `turn` radians),
+`chase` (once begun: `status` card/count/driving/lost/done, `stage`, `player` and `suv` (`s` metres along the road, `d`, `v`, `air`), `gap`, `sight`, `traffic`, `input.keys` left/right/brake, `action('stage'|'go'|'drive'|'next'|'retry'|'skip')`),
 `case` (the running case: `suspects`, `thief`, `notes`, `heat`, `status`), `caseView` (its `targets`, `leads()`), `navaids` (`leads`: each open lead's `id`, `d` metres, `ahead`),
 `step(dt)` (advance the simulation; does nothing while paused, on the title or with the Map open), `render()`,
 `paused` (set true to stop the real-time loop and drive frames from the test), `setPaused(bool)` (player pause),
