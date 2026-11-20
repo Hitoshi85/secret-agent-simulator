@@ -51,6 +51,26 @@ test('every subject makes fair questions with one right answer; seen ones are av
   expect(r.formats.world).toEqual(['choice', 'order']);
 });
 
+test('the banks are big and clean: 40 facts per subject, 100+ events, unique pairs', async ({ page }) => {
+  await open(page);
+  const r = await page.evaluate(async () => {
+    const { FACTS } = await import('/src/cases/compass-facts.js');
+    const { BANKS } = await import('/src/cases/compass.js');
+    const bad = [], ids = new Set();
+    for (const [k, list] of Object.entries(FACTS)) for (const f of list) {
+      if (ids.has(f.id)) bad.push(`${f.id} twice`); ids.add(f.id);
+      if (!f.q || !f.a || !f.why || f.wrong.length < 4 || new Set([f.a, ...f.wrong]).size !== f.wrong.length + 1) bad.push(`${k} ${f.id}`);
+    }
+    const texts = BANKS.EVENTS.map((e) => e[1]);
+    if (new Set(texts).size !== texts.length) bad.push('an event appears twice');
+    for (const b of [BANKS.INVENTIONS, BANKS.ARTWORKS]) if (new Set(b.map((p) => p[0])).size !== b.length || new Set(b.map((p) => p[1])).size !== b.length) bad.push('a pair repeats');
+    return { bad, counts: Object.values(FACTS).map((l) => l.length), events: BANKS.EVENTS.length };
+  });
+  expect(r.bad).toEqual([]);
+  expect(r.counts).toEqual([40, 40, 40, 40]);
+  expect(r.events).toBeGreaterThanOrEqual(100);
+});
+
 test('the compass case plays end to end: any order, Heat, guess at four seals, the ledger', async ({ page }) => {
   const errors = await open(page);
   await page.evaluate(() => window.__agent.act('briefed'));
