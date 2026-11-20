@@ -18,7 +18,7 @@ test('every case is solvable: one thief, decoys differ in one trait, firm clues 
     const E = await import('/src/case/engine.js');
     const { CASES } = await import('/src/cases/index.js');
     const problems = [], thieves = new Set();
-    for (const def of CASES) {
+    for (const def of CASES.filter((d) => !d.kind)) { // suspect cases (seal cases have tests/seals.spec.js)
       for (let n = 0; n < 200; n++) {
         const c = E.newCase(def);
         const t = c.suspects[c.thief], keys = (s) => JSON.stringify(s.traits);
