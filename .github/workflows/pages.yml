@@ -37,7 +37,7 @@ jobs:
     # Ship and rollback only move already tested commits, so they skip the test run.
     if: ${{ !inputs.action || inputs.action == 'deploy' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25 # the full suite takes 12-16 minutes on a hosted runner
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

@@ -144,7 +144,8 @@ test.describe('on a phone', () => {
         const steps = []; let calls = 0, triangles = 0;
         for (let k = 0; k < 6; k++) {
           drive(A, 150);
-          for (let i = 0; i < 6; i++) { const t0 = performance.now(); A.step(1 / 30); steps.push(performance.now() - t0); A.render(); calls = Math.max(calls, A.stats.calls); triangles = Math.max(triangles, A.stats.triangles); }
+          for (let i = 0; i < 6; i++) { const t0 = performance.now(); A.step(1 / 30); steps.push(performance.now() - t0); }
+          A.render(); calls = Math.max(calls, A.stats.calls); triangles = Math.max(triangles, A.stats.triangles); // software WebGL renders slowly: one frame per view
         }
         steps.sort((a, b) => a - b);
         return { calls, triangles, step: steps[Math.floor(steps.length / 2)] };
