@@ -126,7 +126,7 @@ function shippedOpen(prs, openIssues) {
   const merged = prs.filter((p) => p.merged_at).sort((a, b) => new Date(a.merged_at) - new Date(b.merged_at));
   for (const pr of merged) {
     for (const n of closesIssues(pr.body)) {
-      if (open.has(n) && n !== pr.number) { out.push({ issue: n, pr: pr.number }); open.delete(n); }
+      if (open.has(n) && n !== pr.number) { out.push({ issue: n, pr: pr.number, mergedAt: pr.merged_at }); open.delete(n); }
     }
   }
   return out;
@@ -150,6 +150,14 @@ function proposalLines(items, weekStart) {
     lines.push(`#${issue.number} ${issue.title} (${status}${thisWeek ? '' : ', from an earlier week'})`);
   }
   return lines;
+}
+
+// Why a shipped open issue is left open, or null to close it: the run closed it once already, or
+// someone reopened it after the PR merged. Either way a person wants it open.
+function keepOpenReason(comments, events, mergedAt) {
+  if ((comments || []).some((c) => (c.body || '').includes(CLOSED_MARKER))) return 'closed once already and reopened';
+  if ((events || []).some((e) => e.event === 'reopened' && new Date(e.created_at) > new Date(mergedAt))) return 'reopened after the PR merged';
+  return null;
 }
 
 const playerFacing = (files) => (files || []).some((f) => PLAYER_FACING.some((re) => re.test(f.filename || f)));
@@ -269,15 +277,21 @@ async function closeShipped({ github, owner, repo, say }) {
   });
   const openIssues = await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: 'open', per_page: 100 });
   const close = shippedOpen(prs, openIssues);
-  for (const { issue, pr } of close) {
+  const closed = [];
+  for (const { issue, pr, mergedAt } of close) {
+    const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number: issue, per_page: 100 });
+    const events = await github.paginate(github.rest.issues.listEvents, { owner, repo, issue_number: issue, per_page: 100 });
+    const keep = keepOpenReason(comments, events, mergedAt);
+    if (keep) { say(`#${issue}: stays open (${keep}).`); continue; }
     await github.rest.issues.createComment({
       owner, repo, issue_number: issue,
       body: `Shipped in #${pr}, which merged, so this issue is closed. ${CLOSED_MARKER}`,
     });
     await github.rest.issues.update({ owner, repo, issue_number: issue, state: 'closed', state_reason: 'completed' });
     say(`#${issue}: closed, shipped in #${pr}.`);
+    closed.push({ issue, pr });
   }
-  return close;
+  return closed;
 }
 
 async function report({ github, owner, repo, now, say }) {
@@ -367,6 +381,6 @@ async function run({ github, context, core, now = new Date(), forceReport = fals
 }
 
 module.exports = {
-  run, proposedAt, vetoReason, promotions, countPromoted, localDay, isReportDay, closesIssue, closesIssues, shippedOpen,
+  run, proposedAt, vetoReason, promotions, countPromoted, localDay, isReportDay, closesIssue, closesIssues, shippedOpen, keepOpenReason,
   proposalLines, playerFacing, metrics, feedbackRows, playLinks, reportBody, WINDOW_HOURS, MAX_PER_DAY, PROMOTED_MARKER, CLOSED_MARKER,
 };

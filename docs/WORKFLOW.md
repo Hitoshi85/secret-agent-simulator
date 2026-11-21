@@ -12,7 +12,8 @@
    (`.github/workflows/daily.yml`, 12:30 UTC, half an hour after the 7:00 New York review, rules in `.github/scripts/daily.js`, tested in
    `tests/daily.spec.js`) does the promotion. It also closes every open issue that a merged PR says it
    closes ("Closes #N"), with a comment naming the PR: GitHub does not do that for the merge queue,
-   whose merges use the built-in token. A task shipped by a PR without that line is closed by hand.
+   whose merges use the built-in token. An issue someone reopens after that stays open. A task shipped
+   by a PR without that line is closed by hand.
    **Weekly proposal run.** Every Friday at 7:00 New York time a scheduled Claude task ("Secret Agent
    Simulator weekly task proposals") files up to 3 `proposed` tasks (Hitoshi's choice, 2026-11-21).
    Inputs: `REQUIREMENTS.md` (Planned items, "To file" rows, Ideas), the latest playtest report

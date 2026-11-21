@@ -134,8 +134,19 @@ test('open issues a merged PR closes are found once, unmerged PRs ignored', () =
     { number: 50, body: 'Closes #3', merged_at: '2026-11-21T06:00:00Z' },
   ];
   const open = [issue(5, ['task']), issue(11, ['task']), issue(29, ['task']), issue(37, ['task']), { number: 3, pull_request: {} }];
-  expect(d.shippedOpen(prs, open)).toEqual([{ issue: 5, pr: 6 }, { issue: 11, pr: 12 }]);
+  expect(d.shippedOpen(prs, open).map(({ issue, pr }) => ({ issue, pr }))).toEqual([{ issue: 5, pr: 6 }, { issue: 11, pr: 12 }]);
   expect(d.shippedOpen([], open)).toEqual([]);
+});
+
+test('a shipped issue someone reopened stays open', () => {
+  const merged = '2026-11-15T23:17:53Z';
+  expect(d.keepOpenReason([], [], merged)).toBeNull();
+  // Closed by the run once, then reopened: never closed again.
+  expect(d.keepOpenReason([{ body: `Shipped in #6. ${d.CLOSED_MARKER}` }], [], merged)).toMatch(/once/);
+  // Reopened by hand after the PR merged.
+  expect(d.keepOpenReason([], [{ event: 'reopened', created_at: '2026-11-16T10:00:00Z' }], merged)).toMatch(/reopened/);
+  // A reopen before the merge does not count.
+  expect(d.keepOpenReason([], [{ event: 'reopened', created_at: '2026-11-15T10:00:00Z' }], merged)).toBeNull();
 });
 
 test('the report lists this week\'s proposals with what became of them', () => {
