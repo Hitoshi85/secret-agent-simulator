@@ -123,7 +123,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Smoke, phone screenshot and rendering-budget tests (shard ${{ matrix.shard }} of 3)
         timeout-minutes: 15
-        run: npx playwright test --shard=${{ matrix.shard }}/3
+        run: bash .github/scripts/test-shard.sh ${{ matrix.shard }}
       - name: Upload phone screenshots
         if: always()
         uses: actions/upload-artifact@v4
