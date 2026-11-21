@@ -2,7 +2,7 @@
 // dossier case plays end to end in the city (case file, witnesses, the phone puzzle, Heat, endings).
 const { test, expect } = require('@playwright/test');
 
-async function open(page, url = '/index.html') {
+async function open(page, url = '/index.html?case=dossier') {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });

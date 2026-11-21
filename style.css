@@ -32,6 +32,14 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1612; col
 .kicker { text-transform: uppercase; letter-spacing: 3px; font-size: 11px !important; color: #8a5a2b; margin: 0 !important; }
 .sheet button { display: block; width: 100%; min-height: 48px; margin: 8px 0 0; border: 0; border-radius: 14px; background: #2a3038; color: #fff; font-size: 16px; }
 .sheet button.close { background: #c9b8a0; color: #2a2118; }
+.sheet .pick { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #8a5a2b; text-align: left; margin: 4px 0 6px; }
+#cases { display: flex; flex-direction: column; gap: 8px; margin-bottom: 2px; }
+.sheet #cases button { position: relative; margin: 0; padding: 10px 40px 10px 12px; text-align: left; border: 2px solid #d9c9ae; background: #fffaf1; color: #2a2118; }
+#cases button b { display: block; font-family: Georgia, "Times New Roman", serif; font-size: 17px; margin: 2px 0; }
+#cases button small { display: block; font-size: 12px; color: #5c5040; line-height: 1.35; }
+#cases button .no { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #8a5a2b; }
+.sheet #cases button[aria-pressed="true"] { border-color: #2a3038; background: #efe3cc; box-shadow: inset 0 0 0 1px #2a3038; }
+#cases button[aria-pressed="true"]::after { content: "✓"; position: absolute; right: 12px; top: 10px; width: 22px; height: 22px; border-radius: 50%; background: #2a3038; color: #fff; font-size: 13px; line-height: 22px; text-align: center; }
 #places button { background: #8a5a2b; }
 /* Landscape: the buttons stack on the left, so the agent in the middle stays in view. */
 @media (orientation: landscape) and (max-height: 500px) {
@@ -212,7 +220,21 @@ body.chasing .chasehelp { display: block; }
 .stat { display: flex; justify-content: space-between; border-top: 1px solid #e0d4bb; padding: 6px 0; margin: 0 !important; }
 .stamp.ok { border-color: #3f7d4a; color: #3f7d4a; }
 #title .sheet button.close { background: #c9b8a0; color: #2a2118; }
+.sheet .pick { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #8a5a2b; text-align: left; margin: 4px 0 6px; }
+#cases { display: flex; flex-direction: column; gap: 8px; margin-bottom: 2px; }
+.sheet #cases button { position: relative; margin: 0; padding: 10px 40px 10px 12px; text-align: left; border: 2px solid #d9c9ae; background: #fffaf1; color: #2a2118; }
+#cases button b { display: block; font-family: Georgia, "Times New Roman", serif; font-size: 17px; margin: 2px 0; }
+#cases button small { display: block; font-size: 12px; color: #5c5040; line-height: 1.35; }
+#cases button .no { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #8a5a2b; }
+.sheet #cases button[aria-pressed="true"] { border-color: #2a3038; background: #efe3cc; box-shadow: inset 0 0 0 1px #2a3038; }
+#cases button[aria-pressed="true"]::after { content: "✓"; position: absolute; right: 12px; top: 10px; width: 22px; height: 22px; border-radius: 50%; background: #2a3038; color: #fff; font-size: 13px; line-height: 22px; text-align: center; }
 body.chasing .chasehelp { top: calc(170px + env(safe-area-inset-top)); bottom: auto; }
 #chase.carded > * { display: none; }
 #cCount { position: absolute; top: 28%; left: 0; right: 0; text-align: center; font: 96px Georgia, serif; color: #fff; text-shadow: 0 4px 18px rgba(0, 0, 0, .55); }
 .routemap { display: block; width: 100%; max-width: 240px; margin: 4px auto 8px; }
+@media (orientation: landscape) and (max-height: 500px) {
+  #title .sheet { width: min(620px, 92vw); padding: 12px 18px; }
+  #title .sheet h1 { font-size: 28px; margin: 2px 0; }
+  #cases { flex-direction: row; }
+  #cases button { flex: 1; }
+}

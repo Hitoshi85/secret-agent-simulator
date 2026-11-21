@@ -155,3 +155,26 @@ test('questions answer by tapping: options, keypad, switches', async ({ page }) 
     await expect(page.locator('#caseBody .reveal'), fmt).toContainText('Seal broken');
   }
 });
+
+test('Case 02 is the default and the title picks Case 01; Begin still offers the chase', async ({ page }) => {
+  const ready = () => page.waitForFunction(() => window.__agent && window.__agent.stats.frames > 2, null, { timeout: 60000 });
+  await page.goto('/index.html'); await ready();
+  await expect(page.locator('#cases [data-place="compass"]')).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.evaluate(() => [window.__agent.caseId, window.__agent.caseView])).toEqual(['compass', null]);
+  await page.click('#begin');
+  await expect(page.locator('#chaseCard')).toBeVisible();
+  await page.click('#chaseBody [data-chase="skip"]');
+  await expect(page.locator('#casesheet')).toContainText('Compass Ledger');
+  expect(await page.evaluate(() => window.__agent.act('pick', 'dossier')), 'no switching once the case is open').toBe(false);
+
+  await page.reload(); await ready();
+  await page.click('#cases [data-place="dossier"]');
+  await expect(page.locator('#cases [data-place="dossier"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#cases [data-place="compass"]')).toHaveAttribute('aria-pressed', 'false');
+  await page.click('#start');
+  await expect(page.locator('#casesheet')).toContainText('The Dossier');
+  expect(await page.evaluate(() => window.__agent.caseView.def.id)).toBe('dossier');
+
+  await page.goto('/index.html?case=dossier'); await ready();
+  await expect(page.locator('#cases [data-place="dossier"]')).toHaveAttribute('aria-pressed', 'true');
+});
