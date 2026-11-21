@@ -16,7 +16,7 @@ export function newCar(s, d) { return { s, d, psi: 0, v: 0, y: 0, vy: 0, air: 0,
 // falls, so it leaves the ground for a moment.
 function vertical(c, road, dt) {
   const r = sampleRoad(road, c.s, tmp);
-  c.y += c.vy * dt; c.vy -= G * (c.air > 0 ? 2.2 : 1) * dt; // heavier once airborne: short hops
+  c.y += c.vy * dt; c.vy -= G * (c.air > 0 ? 2.2 + Math.max(0, c.air - 0.35) * 12 : 1) * dt; // heavier once airborne, and more so the longer it lasts: short hops
   if (c.y <= r.y) {
     if (c.air > 0.25) { c.airTime = c.air; c.landed = true; } else c.landed = false;
     c.y = r.y; c.vy = r.slope * c.v * Math.cos(c.psi); c.air = 0;
@@ -27,10 +27,10 @@ function vertical(c, road, dt) {
 // The player's car: steer is -1 (left), 0 or 1 (right); brake is true while held.
 export function drivePlayer(c, road, dt, steer, brake) {
   const r = sampleRoad(road, c.s, tmp), off = Math.abs(c.d) > 3.6, flying = c.air > 0.05;
-  const top = off ? 17 : TOP;
+  const top = off ? 32 : TOP; // off the road: a light slowdown, to about 115 km/h
   if (!flying) {
     if (brake) c.v = Math.max(0, c.v - 16 * dt);
-    else if (c.v < top) c.v += (8.5 - 5 * c.v / top) * dt; else c.v = Math.max(top, c.v - 12 * dt);
+    else if (c.v < top) c.v += (8.5 - 5 * c.v / top) * dt; else c.v = Math.max(top, c.v - 5 * dt);
     // nimble: quick to turn at any speed; the road bending away turns the car relative to it
     const rate = steer * 1.7 * Math.min(1, c.v / 6) / (1 + c.v / 70);
     c.psi += (rate - r.curv * c.v * Math.cos(c.psi)) * dt - c.psi * 0.4 * dt * (steer ? 0 : 1);

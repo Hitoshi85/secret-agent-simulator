@@ -1,5 +1,6 @@
-// The opening car chase, Pienza to Florence (src/chase/): Begin starts it, a simple autopilot drives a
-// whole stage with the off-roader always ahead, both cars get air time over the crests, braking
+// The opening car chase, Pienza to Florence (src/chase/): Begin starts it on a road generated fresh every
+// run, a simple autopilot wins the drive of about 45 s with the off-roader always ahead (30 s in sight in a
+// row, catching up behind him, or reaching the end), both cars get air time over the crests, braking
 // slows the car and lights the brake lamps, losing sight of him ends the stage with a retry, oncoming
 // traffic passes in the other lane, Skip goes to Florence, and every chase view stays in the phone budget.
 const { test, expect, devices } = require('@playwright/test');
@@ -24,25 +25,80 @@ const DRIVE = `(A, steps, each) => {
   }
 }`;
 
-test('Begin starts the chase and the autopilot finishes stage 1 with him always ahead', async ({ page }) => {
+test('Begin starts the chase and the autopilot wins the 45-second drive with him always ahead', async ({ page }) => {
   test.setTimeout(180000);
   const errors = await open(page);
   const r = await page.evaluate((src) => {
     const A = window.__agent, C = A.chase, drive = eval(src);
     let minGap = 1e9, maxAir = 0, maxKmh = 0, passed = 0;
     drive(A, 2600, () => { minGap = Math.min(minGap, C.gap); maxAir = Math.max(maxAir, C.player.air); maxKmh = Math.max(maxKmh, C.player.v * 3.6); for (const t of C.traffic) if (t.s < C.player.s && t.s > C.player.s - 2) passed++; });
-    return { state: A.state.state, status: C.status, stage: C.stage, s: C.player.s, end: C.road.end, minGap, maxAir, maxKmh, passed, card: document.getElementById('chaseBody').textContent };
+    return { state: A.state.state, status: C.status, t: C.total, end: C.road.end, minGap, maxAir, maxKmh, passed, card: document.getElementById('chaseBody').textContent };
   }, DRIVE);
   expect(r.state).toBe('chase');
-  expect(r.s, 'reached the end of the stage').toBeGreaterThanOrEqual(r.end);
-  expect(r.status).toBe('card');
-  expect(r.card).toContain('Stage 1 of 3 done');
+  expect(r.end, 'a road of 1.5 km, about 45 s').toBe(1500);
+  expect(r.status, 'the chase is won').toBe('done');
+  expect(r.card).toContain('Follow on foot');
+  expect(r.t, 'over within about 45 seconds').toBeLessThan(50);
   expect(r.minGap, 'the off-roader stays ahead').toBeGreaterThan(0);
-  expect(r.maxAir, 'air time over a crest').toBeGreaterThan(0.3);
-  expect(r.maxAir, 'short hops, not long jumps').toBeLessThan(0.8);
+  expect(r.maxAir, 'air time over a crest').toBeGreaterThan(0.2);
+  expect(r.maxAir, 'short hops, not long jumps').toBeLessThan(0.75);
   expect(r.maxKmh, 'tops out near 140 km/h').toBeGreaterThan(130);
   expect(r.maxKmh).toBeLessThan(150);
   expect(r.passed, 'oncoming traffic went by').toBeGreaterThan(0);
+  expect(errors).toEqual([]);
+});
+
+test('every run builds a new road; catching right up or 30 s in sight wins early', async ({ page }) => {
+  const errors = await open(page);
+  const r = await page.evaluate(() => {
+    const A = window.__agent, C = A.chase, i = 300;
+    const roadA = [C.road.x[i], C.road.y[i]];
+    C.start(); C.action('stage'); C.action('drive');
+    const roadB = [C.road.x[i], C.road.y[i]];
+    for (let k = 0; k < 30; k++) A.step(1 / 30);
+    C.suv.s = C.player.s + 6; A.step(1 / 30);
+    const caught = { status: C.status, card: document.getElementById('chaseBody').textContent };
+    C.action('retry'); C.action('drive'); C.streak = 29.95;
+    let won = null;
+    for (let k = 0; k < 30 && C.status === 'driving'; k++) { A.step(1 / 30); if (C.status === 'done') won = document.getElementById('chaseBody').textContent; }
+    return { roadA, roadB, caught, won, streak: C.streak };
+  });
+  expect(r.roadB, 'a different road the next run').not.toEqual(r.roadA);
+  expect(r.caught.status).toBe('done');
+  expect(r.caught.card).toContain('CAUGHT UP');
+  expect(r.won, '30 s in sight in a row wins').toContain('He never left your sight');
+  expect(errors).toEqual([]);
+});
+
+test('the steering slider at the bottom middle follows the steering, the car goes where it points, and off the road costs only a little speed', async ({ page }) => {
+  const errors = await open(page);
+  const r = await page.evaluate(async () => {
+    const A = window.__agent, C = A.chase, F = C.fiat;
+    for (let i = 0; i < 30; i++) A.step(1 / 30);
+    C.input.keys.right = true;
+    for (let i = 0; i < 8; i++) A.step(1 / 30);
+    const wheel = document.querySelector('#cWheel b').style.left, box = document.getElementById('cWheel').getBoundingClientRect(), brake = document.getElementById('cBrake').getBoundingClientRect();
+    // direction of travel over one frame against the way the body points (its local +x)
+    const x0 = F.position.x, z0 = F.position.z; A.step(1 / 30);
+    const moved = Math.atan2(F.position.x - x0, F.position.z - z0), points = Math.atan2(Math.cos(F.rotation.y), -Math.sin(F.rotation.y));
+    C.input.keys.right = false;
+    let off = Math.abs(Math.atan2(Math.sin(moved - points), Math.cos(moved - points)));
+    // off the road on open ground: a light slowdown only
+    const { buildStage } = await import('/src/chase/land.js'); const { newCar, drivePlayer, KMH } = await import('/src/chase/drive.js');
+    const { road } = buildStage(1); const clear = (a) => { for (let i = a / 2; i < a / 2 + 130; i++) if (road.cyp[i]) return false; return true; };
+    let s0 = 450; while (!clear(s0)) s0 += 10;
+    const car = newCar(s0, 8); car.v = 39; car.y = road.y[s0 / 2];
+    for (let i = 0; i < 150; i++) { car.d = 8; car.psi = 0; drivePlayer(car, road, 1 / 30, 0, false); }
+    return { wheel, box: { top: box.top, mid: box.left + box.width / 2, right: box.right, h: innerHeight, w: innerWidth, brakeLeft: brake.left, brakeRight: brake.right }, off, offKmh: car.v * KMH };
+  });
+  expect(Number(/calc\(([\d.]+)%/.exec(r.wheel)[1]), 'marker slid right').toBeGreaterThan(75);
+  expect(r.box.top, 'at the bottom of the screen').toBeGreaterThan(r.box.h * 0.7);
+  expect(Math.abs(r.box.mid - r.box.w / 2), 'centred').toBeLessThan(1);
+  expect(r.box.brakeLeft, 'Brake at the bottom right, clear of the slider').toBeGreaterThan(r.box.right);
+  expect(r.box.brakeRight).toBeGreaterThan(r.box.w - 20);
+  expect(r.off, 'moves the way it points').toBeLessThan(0.05);
+  expect(r.offKmh, 'off road: about 115 km/h').toBeGreaterThan(105);
+  expect(r.offKmh).toBeLessThan(125);
   expect(errors).toEqual([]);
 });
 
@@ -135,10 +191,22 @@ test.describe('on a phone', () => {
     expect(await page.evaluate(() => window.__agent.chase.input.right)).toBe(0);
   });
 
-  test('every chase view stays within 250 draw calls, 400k triangles and 4 ms of game work', async ({ page }) => {
+  test('the steering slider sits between the speedometer and Brake on 320, 360 and 390 wide phones', async ({ page }) => {
+    await open(page);
+    for (const width of [320, 360, 390]) {
+      await page.setViewportSize({ width, height: 780 });
+      const r = await page.evaluate(() => { const b = (id) => document.getElementById(id).getBoundingClientRect(); return { s: b('cWheel'), sp: b('cSpeedo'), br: b('cBrake'), w: innerWidth }; });
+      expect(r.s.left, `${width}: clear of the speedometer`).toBeGreaterThanOrEqual(r.sp.right);
+      expect(r.s.right, `${width}: clear of Brake`).toBeLessThanOrEqual(r.br.left);
+      expect(Math.abs(r.s.left + r.s.width / 2 - r.w / 2), `${width}: centred`).toBeLessThan(1);
+      expect(r.s.width, `${width}: wide enough to read`).toBeGreaterThanOrEqual(80);
+    }
+  });
+
+  test('the chase view stays within 250 draw calls, 400k triangles and 4 ms of game work', async ({ page }) => {
     test.setTimeout(240000);
     await open(page);
-    for (const stage of [0, 1, 2]) {
+    for (const stage of [0]) { // the chase drives the first stage
       const t = await page.evaluate(({ src, stage }) => {
         const A = window.__agent, C = A.chase, drive = eval(src);
         if (stage) { C.action('next'); while (C.stage < stage) C.action('next'); C.action('drive'); }
