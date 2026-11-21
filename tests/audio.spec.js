@@ -4,11 +4,11 @@
 // errors. The mute button on the pause screen silences it and is remembered after a reload.
 const { test, expect } = require('@playwright/test');
 
-async function open(page) {
+async function open(page, url = '/index.html') {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto('/index.html');
+  await page.goto(url);
   await page.waitForFunction(() => window.__agent && window.__agent.stats.frames > 2, null, { timeout: 60000 });
   return errors;
 }
@@ -16,7 +16,7 @@ const MAX = 64;
 
 test('the chase and the walk make sound within the node budget', async ({ page }) => {
   test.setTimeout(180000);
-  const errors = await open(page);
+  const errors = await open(page, '/index.html?case=dossier'); // a wrong accusation plays the sting
   expect(await page.evaluate(() => window.__agent.audio.ctx), 'no audio before the first tap').toBeNull();
   await page.click('#begin'); // the first tap starts sound
   await page.waitForFunction(() => window.__agent.audio.stats.state === 'running', null, { timeout: 10000 });

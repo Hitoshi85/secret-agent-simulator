@@ -32,12 +32,24 @@ scene.add(city, buildLandmarks());
 const agent = makeAgent(scene, START.at, START.face);
 const crowd = makeCrowd(scene, CROWD);
 const params = new URL(location.href).searchParams;
-const def = pickCase(params.get('case'));
-const caseView = def.kind === 'seals' ? makeSealView({ scene, def, agent }) : makeCaseView({ scene, crowd, def });
-caseView.toast = toast;
-if (def.train) document.getElementById('locSub').textContent = `Firenze · ${def.time} · train ${def.train}`;
+// The case: Case 02 unless the title's case picker (or ?case=<id>) chooses another. It is built when
+// the player leaves the title, so the pick never needs undoing.
+let def = pickCase(params.get('case')), caseView = null, navaids = null;
 let pending = null; // a case person or thing the agent is walking up to
-const navaids = makeNavaids({ caseView, agent, cam });
+function pickTitleCase(id) {
+  if (caseView) return false;
+  def = pickCase(id);
+  for (const b of document.querySelectorAll('#cases button')) b.setAttribute('aria-pressed', String(b.dataset.place === def.id));
+  return def.id;
+}
+pickTitleCase(def.id);
+function openCase() {
+  if (caseView) return;
+  caseView = def.kind === 'seals' ? makeSealView({ scene, def, agent }) : makeCaseView({ scene, crowd, def });
+  caseView.toast = toast;
+  if (def.train) document.getElementById('locSub').textContent = `Firenze · ${def.time} · train ${def.train}`;
+  navaids = makeNavaids({ caseView, agent, cam });
+}
 const sessionLog = makeSessionLog(); // in memory only, sent nowhere until the player presses Feedback
 
 // Tap marker: a ring that pulses where the agent is heading.
@@ -81,13 +93,15 @@ function act(action, a, b, c) {
   switch (action) {
     case 'chase': {
       if (state.state !== 'title') return false;
+      openCase();
       if (!chase) { chase = makeChase({ renderer, toast, onDone: () => { state.state = 'title'; act('start'); } }); chase.resize(innerWidth, innerHeight); }
       state.state = 'chase'; show('title', false); chase.start(); return true;
     }
-    case 'start': if (state.state === 'title') { state.state = 'playing'; show('title', false); caseView.caseFile(); } return true;
+    case 'start': if (state.state === 'title') { openCase(); state.state = 'playing'; show('title', false); caseView.caseFile(); } return true;
+    case 'pick': return state.state === 'title' && pickTitleCase(a); // the title's case picker
     case 'walkTo': {
       if (state.state !== 'playing') return false;
-      pending = null; caseView.hideTalk();
+      pending = null; caseView?.hideTalk();
       const ok = walkTo(agent, a, b, c);
       stats.lastWalkFound = ok;
       if (ok) { document.getElementById('hint').classList.add('done'); const end = agent.path[agent.path.length - 1]; marker.position.set(end[0], 0.04, end[1]); marker.material.opacity = 1; }
@@ -99,7 +113,7 @@ function act(action, a, b, c) {
       teleport(agent, p.at, p.face); cam.yaw = agent.heading; cam.pitch = p.pitch ?? -0.05; state.map = false; show('map', false);
       updateCamera(camera, agent, 0, state.clock, true); toast(p.name); return true;
     }
-    case 'map': if (state.state === 'chase') return false; state.map = !state.map; show('map', state.map); if (state.map) navaids.drawBig(); return state.map;
+    case 'map': if (state.state !== 'playing') return false; state.map = !state.map; show('map', state.map); if (state.map) navaids.drawBig(); return state.map;
     case 'pause': {
       if (state.state !== 'playing' && state.state !== 'chase') return false;
       state.paused = a === 'auto' ? true : !state.paused;
@@ -111,19 +125,19 @@ function act(action, a, b, c) {
     }
     case 'phone': if (state.state !== 'playing') return false; if (!caseView.phone()) toast('No messages from your handler'); return true;
     case 'notebook': if (state.state !== 'playing') return false; caseView.notebook(); return true;
-    case 'close': caseView.close(); return true;
-    case 'briefed': if (caseView.def.handler) caseView.handler(); else caseView.close(); return true;
-    case 'accuse': { const live = caseView.c && caseView.c.status === 'open', r = caseView.accuse(a); if (live && r) sessionLog.accused(a, r); return r; }
-    case 'dot': return caseView.dot(a);
-    case 'answer': return caseView.answer ? caseView.answer(a) : null; // seal cases: answer the open question
-    case 'guess': return caseView.guess ? caseView.guess(a) : null;
-    case 'again': caseView.reset(); sessionLog.caseStarted(state.clock); teleport(agent, START.at, START.face); cam.yaw = agent.heading; cam.pitch = START.pitch; caseView.caseFile(); return true;
-    case 'interact': { const t = caseView.targets.find((q) => q.kind === a && String(q.id) === String(b)); return t ? approach(t) : null; }
+    case 'close': caseView?.close(); return true;
+    case 'briefed': if (!caseView) return false; if (caseView.def.handler) caseView.handler(); else caseView.close(); return true;
+    case 'accuse': { if (!caseView) return false; const live = caseView.c && caseView.c.status === 'open', r = caseView.accuse(a); if (live && r) sessionLog.accused(a, r); return r; }
+    case 'dot': if (!caseView) return false; return caseView.dot(a);
+    case 'answer': if (!caseView) return false; return caseView.answer ? caseView.answer(a) : null; // seal cases: answer the open question
+    case 'guess': if (!caseView) return false; return caseView.guess ? caseView.guess(a) : null;
+    case 'again': if (!caseView) return false; caseView.reset(); sessionLog.caseStarted(state.clock); teleport(agent, START.at, START.face); cam.yaw = agent.heading; cam.pitch = START.pitch; caseView.caseFile(); return true;
+    case 'interact': if (!caseView) return false; { const t = caseView.targets.find((q) => q.kind === a && String(q.id) === String(b)); return t ? approach(t) : null; }
     case 'feedback': {
       if (state.state === 'playing' && !state.paused) act('pause');
       watch();
       const context = [`Game version: ${VERSION}`, `Where: ${state.area || 'between places'} (x ${agent.x.toFixed(0)}, z ${agent.z.toFixed(0)})`, `Case: ${def.id}`, `Time of day: ${def.time}`,
-        ...sessionLog.summary({ state, c: caseView.c, chase, clock: state.clock, def })];
+        ...sessionLog.summary({ state, c: caseView?.c, chase, clock: state.clock, def })];
       const device = `${innerWidth}x${innerHeight} @${devicePixelRatio}x · ${navigator.userAgent}`;
       const href = feedbackUrl(REPO, context, sessionLog.recent(), device);
       stats.lastFeedbackUrl = href;
@@ -141,7 +155,7 @@ document.addEventListener('click', (e) => {
   const b = e.target.closest('button[data-case], button[data-dot]'); if (!b) return;
   if (b.dataset.dot) return act('dot', Number(b.dataset.dot));
   const k = b.dataset.case;
-  if (k === 'talk') caseView.hideTalk(); else act(k, Number(b.dataset.suspect));
+  if (k === 'talk') caseView?.hideTalk(); else act(k, Number(b.dataset.suspect));
 });
 
 // Every button ticks; the pause screen's sound button shows and flips mute.
@@ -155,10 +169,10 @@ const readKeys = setupUI({ canvas, act, onTap, onDrag: (dx, dy) => { cam.yaw -= 
 // Advances the simulation by dt seconds (does nothing while paused or on the title), then notes
 // what changed in the session log.
 const seen = { state, c: null, chase: null, clock: 0 }; // reused every frame
-const watch = (dt = 0) => { seen.c = caseView.c; seen.chase = chase; seen.clock = state.clock; sessionLog.watch(seen, state.paused || state.map ? 0 : dt); };
+const watch = (dt = 0) => { seen.c = caseView?.c ?? null; seen.chase = chase; seen.clock = state.clock; sessionLog.watch(seen, state.paused || state.map ? 0 : dt); };
 function step(dt) { advance(dt); watch(dt); }
 function advance(dt) {
-  const heat = caseView.c ? caseView.c.heat : 0;
+  const heat = caseView?.c ? caseView.c.heat : 0;
   if (heat > lastHeat) audio.sting();
   lastHeat = heat;
   if (state.state === 'chase') { if (!state.paused) chase.step(dt, innerWidth, innerHeight); audio.chase(chase); return; }
@@ -216,7 +230,7 @@ requestAnimationFrame(frame);
 // Test hook (see CLAUDE.md). Keep it working when refactoring; add to it for new features.
 window.__agent = {
   state, stats, agent, crowd, act, step, render, cam, PLACES,
-  get case() { return caseView.c; }, caseView, navaids, audio, get chase() { return chase; },
+  get case() { return caseView?.c; }, get caseView() { return caseView; }, get navaids() { return navaids; }, get caseId() { return def.id; }, audio, get chase() { return chase; },
   get paused() { return loop.paused; }, set paused(v) { loop.paused = v; last = performance.now(); },
   setPaused(v) { if (!!v !== state.paused) act('pause'); },
   sessionLog, walkable, findPath, areaAt, version: VERSION,

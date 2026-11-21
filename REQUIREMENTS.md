@@ -8,7 +8,7 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 - **Play dev (latest main):** https://hitoshi85.github.io/secret-agent-simulator/dev/ (add `?v=<short commit>`
   on a phone to skip a cached copy; the current links with that suffix are always in [README.md](README.md))
 - **Backlog:** [open issues](https://github.com/Hitoshi85/secret-agent-simulator/issues)
-- **Mockups:** the agreed look (v2), the case screens (case 01, case 02) and the Tuscany car chase are in [docs/mockups/](docs/mockups/)
+- **Mockups:** the agreed look (v2), the case screens (case 01, case 02), the title's case picker and the Tuscany car chase are in [docs/mockups/](docs/mockups/)
 - **Last updated:** 2026-11-21
 
 ## 1. Core requirements
@@ -41,6 +41,7 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 | R22 | Feedback sends session context (Hitoshi's choice, 2026-11-21): the game keeps a small event log in memory only (no network, no storage, no analytics), and the Feedback issue's Game context adds the mode and chase stage, time in case, clues found of total, accusations, Heat, chase retries, time since the last new clue and the last 10 events, in a link short enough for GitHub. | Done (#40) |
 | R23 | Pacing targets (Hitoshi's choices, 2026-11-21), measured by the AI playtester (W18) and shown as met or missed, not enforced yet: a case takes 10–15 minutes for a novice (median); the longest stretch with nothing new is 45 s or less (novice median); a novice clears the chase within 2 tries in 80% of seeds; a novice gets 60–80% of Case 02 seal questions right on the first try. Enforcing them in CI is a later task. | Measured, not enforced (#35) |
 | R24 | Original sound made in code with Web Audio, no audio files and nothing imitating a known film or game theme (Hitoshi's choice from the repo review, 2026-11-21). Mood "Tuscan Noir": plucked strings and a low bowed drone. The red car's engine note follows its speed and gear shifts, gravel rumbles off the road, the brakes squeal, crests thump on landing and crashes crunch; footsteps on stone (quicker when running); a short sting when Heat rises; a wooden click on every button; a quiet music bed only on the title, the case file and the chase cards. Sound starts after the first tap or key; 🔊 Sound on/off on the pause screen is remembered on the phone; at most 64 live audio nodes (`tests/audio.spec.js`). | Done (#45) |
+| R25 | Case 02 is the default case (Hitoshi's request, 2026-11-21, mockup docs/mockups/case-picker.png): the title screen has a case picker with Case 02 "The Compass Ledger" selected and Case 01 "The Dossier" a tap away; Begin still starts with the car chase and Skip goes straight to Florence, both into the chosen case. `?case=dossier` preselects Case 01. | In progress (#48) |
 
 ### How we work
 
@@ -78,7 +79,6 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 
 | Date | Feedback / request from Hitoshi | Outcome |
 |---|---|---|
-| 2026-11-16 | Pacing mockup: "Don't show who the people are on the left screen but still show the direction and distance." | Arrows show only direction and distance (R19), #12. |
 | 2026-11-16 | "Always show options as selectable cards." "Always tell me who/what we are waiting on: me, you, or GitHub." | W16. |
 | 2026-11-19 | "Create a new separate case in the style of Da Vinci code with questions about world history, art history, military history, technology history, mechanical engineering and electrical engineering … mix up the formats … show sample questions/formats as screenshots first." | Original story (no characters or plot from the book); 8 sample screens, one per subject and format. R20, issue #15. |
 | 2026-11-19 | "Can it be written in a way that questions/formats change every time and all questions are available to solve in any order?" | Seal board with all six seals open; subjects dealt to landmarks and formats drawn per play; letters fill fixed slots. Mockup revised to 11 screens. |
@@ -98,6 +98,7 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 | 2026-11-21 | Shared an analysis of how the repo uses agentic AI; asked for clarifying questions and tasks one by one. Recommendation 1, "Build it now, report only": an AI playtester; "Its own workflow" for CI. | Issue #35 filed as `ready`; W18, PR #42. |
 | 2026-11-21 | Pacing targets: case length for a novice 10–15 min; longest stretch with nothing new 45 s; chase cleared within 2 tries in 80% of seeds; novice seal first-try right 60–80%. "Set targets now, enforce later". | R23: the playtest summary shows each as met or missed; enforcing comes in a later task. PR #42. |
 | 2026-11-21 | Reviewed the repo analysis and chose its sound task, "Original sound, generated in code". Cards: "B, Tuscan Noir" of three code-made mood samples; "Quiet bed on title and case file". | R24, issue #36: engine, tyres, brake, landings, footsteps, Heat sting, button clicks and the quiet bed, with a mute button on the pause screen; #45. |
+| 2026-11-21 | "Make Case 02 the default instead of Case 01. Still provide car chase option at the beginning." Cards: keep Case 01 as a menu option; a case picker on the title; mockup approved with "Drop the NEW tag". | R25: two case cards on the title, Case 02 selected, the chase still first. PR #48. |
 
 ## 4. Open backlog
 

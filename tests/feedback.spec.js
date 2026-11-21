@@ -16,7 +16,7 @@ const context = (href) => new URL(href).searchParams.get('context');
 
 test('Feedback after a lost chase and some casework carries the session in the issue link', async ({ page }) => {
   test.setTimeout(120000);
-  const errors = await open(page);
+  const errors = await open(page, '/index.html?case=dossier'); // walks to a dossier witness
   const href = await page.evaluate(() => {
     const A = window.__agent;
     A.act('chase'); const C = A.chase; C.action('stage'); C.action('drive');

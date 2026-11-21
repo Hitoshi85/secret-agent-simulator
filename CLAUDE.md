@@ -31,7 +31,7 @@ folder and point the import map at it. No bundler.
 | `src/audio.js` | All sound, made in code with Web Audio: engine, tyres, brake, landings, footsteps, the Heat sting, button clicks, the quiet music bed; mute (remembered), the live node budget |
 | `src/mapdraw.js` | The city drawn from above on a 2D canvas (blocks, streets, river, landmarks, labels), pins and the agent's arrow |
 | `src/navaids.js` | Edge arrows to unvisited leads (distance only), the corner minimap and the big Map |
-| `src/cases/*.js` | One data file per case (text, traits, witnesses, traces, places); `src/cases/index.js` lists them, `?case=<id>` picks one |
+| `src/cases/*.js` | One data file per case (text, traits, witnesses, traces, places); `src/cases/index.js` lists them; Case 02 (`compass`) is the default, the title's case picker or `?case=<id>` picks another |
 | `src/case/engine.js` | Case rules shared by every case, no 3D or page code: random thief, one-trait decoys, clues, the phone pattern, accusations, Heat |
 | `src/case/view.js` | A case in the city and on screen: witnesses, traces and suspects to tap, the case file, talk card, Notebook, phone puzzle, endings |
 | `src/case/quiz.js`, `seals.js`, `sealview.js` | Seal cases (`kind: 'seals'`, Case 02): question generators and checks; the rules (seals in any order, Heat, word guess); the seal board and question sheets |
@@ -87,7 +87,7 @@ checked by `tests/phone-checks.spec.js` (250 draw calls, 400k triangles, 4 ms of
 `game.js` exposes `window.__agent` for tests: `state` (`state` title/playing, `paused`, `map`, `area`, `clock`),
 `stats` (`frames`, `calls` and `triangles` of the last render, `textures` (GPU textures, chase only), `people`, `buildings`, `lastWalkFound`),
 `agent` (`x`, `z`, `heading`, `path`, `walking`, `walked`), `crowd` (each `mesh`), `cam` (`yaw`, `pitch`),
-`act(action, ...)` (`chase` (Begin: the opening car chase), `start` (Florence), `walkTo` x z run, `jump` place-id, `map`, `pause`, `sound` (flip mute), `phone`, `notebook`, `close`, `briefed` (case file taken: the handler's lead), `interact` kind id, `accuse` suspect-id, `dot` 0-8, `answer` value and `guess` word (seal cases), `again`, `feedback`, `turn` radians),
+`caseId` (the chosen case; the case view is built when the title closes), `act(action, ...)` (`pick` case-id (the title's case picker), `chase` (Begin: the opening car chase), `start` (Florence), `walkTo` x z run, `jump` place-id, `map`, `pause`, `sound` (flip mute), `phone`, `notebook`, `close`, `briefed` (case file taken: the handler's lead), `interact` kind id, `accuse` suspect-id, `dot` 0-8, `answer` value and `guess` word (seal cases), `again`, `feedback`, `turn` radians),
 `chase` (once begun: `status` card/count/driving/lost/done, `stage`, `seed` (this run's road), `streak` (seconds in sight in a row), `wheel` (steering indicator, -1 to 1), `fiat` (the red car's mesh), `player` and `suv` (`s` metres along the road, `d`, `v`, `air`), `gap`, `sight`, `traffic`, `input.keys` left/right/brake, `action('stage'|'go'|'drive'|'next'|'retry'|'skip')`),
 `audio` (`muted`, `ctx`, `stats`: `state`, `nodes`, `peak`, `engineHz`, `squeal`, `bed`, `played` counts), `case` (the running case: `suspects`, `thief`, `notes`, `heat`, `status`), `caseView` (its `targets`, `leads()`), `navaids` (`leads`: each open lead's `id`, `d` metres, `ahead`),
 `step(dt)` (advance the simulation; does nothing while paused, on the title or with the Map open), `render()`,
