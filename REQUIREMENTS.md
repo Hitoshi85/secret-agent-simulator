@@ -65,7 +65,7 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 | W16 | Every update says what the work is waiting on: Hitoshi, Claude or GitHub (Hitoshi's rule, 2026-11-16). Options always come as selectable cards. | In place |
 | W17 | Fast CI: the Playwright tests run in 3 parallel shards on PRs and before each deploy; changes to README.md alone skip the browser tests (lint and the requirements check still run); main's comparison screenshots run beside the tests. The required check stays **Lint and smoke test** (Hitoshi's choices, 2026-11-21). | In place (#41) |
 | W18 | AI playtester (Hitoshi's choice, 2026-11-21: build it now, report only): `npm run playtest` plays the dossier case, Case 02 and the chase through `window.__agent` as three personas (novice, efficient, careless), 20 seeds each, and writes `playtest/playtest-report.json` (every run's timeline) and a Markdown summary with the R23 targets. Its own workflow runs it on PRs that touch `src/` or `game.js` (artifact `playtest`, job summary); it always passes and never blocks a merge. | In place (#35, #42) |
-| W19 | Weekly task proposals (Hitoshi's choices, 2026-11-21): a scheduled Claude run on Fridays at 7:00 New York time files up to 3 `proposed` tasks from the Planned requirements, the latest playtest report and open feedback, each with a Goal, Done when, Size and requirement; `visual` tasks wait for a mockup in `docs/mockups/`. The daily run closes issues whose PR merged, and the Friday report lists both. Steps: `docs/PROPOSALS.md`. | In place (#51); scheduled run to be set up |
+| W19 | Weekly task proposals (Hitoshi's choices, 2026-11-21): a scheduled Claude run on Fridays at 7:00 New York time files up to 3 `proposed` tasks from the Planned requirements, the latest playtest report and open feedback, each with a Goal, Done when, Size and requirement; `visual` tasks wait for a mockup in `docs/mockups/`. The daily run closes issues whose PR merged, and the Friday report lists both. Steps: `docs/PROPOSALS.md`. | In place (#52); scheduled run to be set up |
 
 ## 2. Shipped changes
 
@@ -99,7 +99,7 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 | 2026-11-21 | Pacing targets: case length for a novice 10–15 min; longest stretch with nothing new 45 s; chase cleared within 2 tries in 80% of seeds; novice seal first-try right 60–80%. "Set targets now, enforce later". | R23: the playtest summary shows each as met or missed; enforcing comes in a later task. PR #42. |
 | 2026-11-21 | Reviewed the repo analysis and chose its sound task, "Original sound, generated in code". Cards: "B, Tuscan Noir" of three code-made mood samples; "Quiet bed on title and case file". | R24, issue #36: engine, tyres, brake, landings, footsteps, Heat sting, button clicks and the quiet bed, with a mute button on the pause screen; #45. |
 | 2026-11-21 | "Make Case 02 the default instead of Case 01. Still provide car chase option at the beginning." Cards: keep Case 01 as a menu option; a case picker on the title; mockup approved with "Drop the NEW tag". | R25: two case cards on the title, Case 02 selected, the chase still first. PR #48. |
-| 2026-11-21 | From the repo analysis, chose "Yes, after the playtester" for weekly task proposals. Cards: "Scheduled Claude run"; "Daily run closes them" (issues whose PR merged); "Friday 7:00 NY". | W19, issue #50: docs/PROPOSALS.md for the weekly run, the daily run closes shipped issues and holds `visual` tasks until a mockup, the Friday report lists the proposals. PR #51. |
+| 2026-11-21 | From the repo analysis, chose "Yes, after the playtester" for weekly task proposals. Cards: "Scheduled Claude run"; "Daily run closes them" (issues whose PR merged); "Friday 7:00 NY". | W19, issue #50: docs/PROPOSALS.md for the weekly run, the daily run closes shipped issues and holds `visual` tasks until a mockup, the Friday report lists the proposals. PR #52. |
 
 ## 4. Open backlog
 
@@ -116,7 +116,7 @@ Add the `ready` label to an issue to start it.
 | #36 | Original sound, generated in code (R24) | Done (#45) |
 | #37 | Feedback button sends session context (R22) | Done (#40) |
 | #35 | AI playtester: persona bots that play every mode (W18, R23) | Done (#42) |
-| #50 | Weekly task proposals from the backlog (W19) | In progress (#51) |
+| #50 | Weekly task proposals from the backlog (W19) | In progress (#52) |
 
 ## 5. Ideas mentioned, not yet requested
 
