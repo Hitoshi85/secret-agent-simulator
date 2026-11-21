@@ -1,7 +1,8 @@
 name: Playtest
 # The AI playtester (tests/playtest/): personas play every mode over 20 seeds and report pacing.
 # Report only: every step may fail without failing the job, so this never blocks a merge. The report
-# is the `playtest` artifact and the job summary.
+# is the `playtest` artifact and the job summary. The merge queue ignores this check (SELF_CHECKS in
+# .github/scripts/merge-queue.js), so even a failed setup or a timeout cannot hold a PR back.
 
 on:
   pull_request:

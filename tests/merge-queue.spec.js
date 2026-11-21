@@ -66,6 +66,10 @@ test('check states', () => {
     { id: 1, name: q.REQUIRED_CHECK, status: 'completed', conclusion: 'failure' }, ok(q.REQUIRED_CHECK, 5),
     { id: 9, name: 'Merge queue', status: 'in_progress' },
   ])).toBe('success');
+  // The AI playtest is report only: failed, timed out or still running, it never holds a PR back.
+  for (const play of [{ status: 'completed', conclusion: 'failure' }, { status: 'completed', conclusion: 'timed_out' }, { status: 'in_progress' }]) {
+    expect(q.checksState([ok(q.REQUIRED_CHECK), { id: 3, name: 'AI playtest (report only)', ...play }])).toBe('success');
+  }
 });
 
 test('a CI run parked for approval does not count as queued', () => {
