@@ -3,7 +3,7 @@
 ## Play now
 
 <!-- play-links:start -->
-- **Prod** (prod-2, 5070e4b): https://hitoshi85.github.io/secret-agent-simulator/
+- **Prod** (prod-3, d0c2a91): https://hitoshi85.github.io/secret-agent-simulator/
 - **Dev** (d0c2a91): https://hitoshi85.github.io/secret-agent-simulator/dev/
 <!-- play-links:end -->
 
