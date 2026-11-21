@@ -1,7 +1,7 @@
 // Sums up the playtester's runs (tests/playtest/run.js) per mode and persona, checks Hitoshi's pacing
 // targets (report only: met or missed, nothing fails) and writes the Markdown summary.
 
-// Pacing targets Hitoshi chose on 2026-11-21 (REQUIREMENTS.md R22). Enforcing them is a later task.
+// Pacing targets Hitoshi chose on 2026-11-21 (REQUIREMENTS.md R23). Enforcing them is a later task.
 const TARGETS = [
   { id: 'length', label: 'Case length, novice, median', want: '10–15 min', modes: ['dossier', 'compass'], value: (s) => s.novice.medianTime / 60, ok: (v) => v >= 10 && v <= 15, show: (v) => `${v.toFixed(1)} min` },
   { id: 'dead', label: 'Longest stretch with nothing new, novice, median', want: '45 s or less', modes: ['dossier', 'compass'], value: (s) => s.novice.medianNoInfo, ok: (v) => v <= 45, show: (v) => `${Math.round(v)} s` },

@@ -124,5 +124,5 @@ Keep it small, `tests/requirements.spec.js` checks it in CI:
 - `npm run serve` serves the game at http://127.0.0.1:8080/
 - `npm run lint`, `npm test`, `npm run check`
 - `npm run playtest` (`-- --seeds 5`, `--modes chase`): the AI playtester in `tests/playtest/` plays every mode as
-  three personas and writes `playtest/playtest-report.json` and `.md` with the pacing targets (R22). Report only;
+  three personas and writes `playtest/playtest-report.json` and `.md` with the pacing targets (R23). Report only;
   `.github/workflows/playtest.yml` runs it on PRs that touch `src/` or `game.js` (artifact `playtest`)
