@@ -6,7 +6,8 @@ const { test, expect, chromium } = require('@playwright/test');
 
 const SITES = [['repo', '/index.html'], ['prod', '/_site-test/index.html'], ['dev', '/_site-test/dev/index.html']];
 
-for (const [site, url] of SITES) {
+const RUNS = [...SITES, ...['b', 'c'].map((v) => [`repo variant ${v}`, `/index.html?variant=${v}`])]; // every sound style too
+for (const [site, url] of RUNS) {
   test(`${site}: a fresh phone is not muted and the first tap makes sound`, async ({ browserName }, info) => {
     test.skip(browserName !== 'chromium');
     test.setTimeout(120000);

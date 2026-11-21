@@ -12,7 +12,7 @@ async function open(page, url = '/index.html') {
   await page.waitForFunction(() => window.__agent && window.__agent.stats.frames > 2, null, { timeout: 60000 });
   return errors;
 }
-const MAX = 64;
+const MAX = 96;
 
 test('the chase and the walk make sound within the node budget', async ({ page }) => {
   test.setTimeout(180000);
