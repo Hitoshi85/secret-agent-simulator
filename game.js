@@ -15,6 +15,7 @@ import { makeCaseView } from './src/case/view.js';
 import { makeSealView } from './src/case/sealview.js';
 import { makeNavaids } from './src/navaids.js';
 import { makeChase } from './src/chase/chase.js';
+import { makeSessionLog, feedbackUrl } from './src/sessionlog.js';
 
 const VERSION = new URL(import.meta.url).searchParams.get('v') || 'local';
 const REPO = 'https://github.com/hitoshi85/secret-agent-simulator';
@@ -36,6 +37,7 @@ caseView.toast = toast;
 if (def.train) document.getElementById('locSub').textContent = `Firenze · ${def.time} · train ${def.train}`;
 let pending = null; // a case person or thing the agent is walking up to
 const navaids = makeNavaids({ caseView, agent, cam });
+const sessionLog = makeSessionLog(); // in memory only, sent nowhere until the player presses Feedback
 
 // Tap marker: a ring that pulses where the agent is heading.
 const marker = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.65, 32), new THREE.MeshBasicMaterial({ color: '#f2c14e', transparent: true, opacity: 0, depthWrite: false }));
@@ -107,20 +109,21 @@ function act(action, a, b, c) {
     case 'notebook': if (state.state !== 'playing') return false; caseView.notebook(); return true;
     case 'close': caseView.close(); return true;
     case 'briefed': if (caseView.def.handler) caseView.handler(); else caseView.close(); return true;
-    case 'accuse': return caseView.accuse(a);
+    case 'accuse': { const live = caseView.c && caseView.c.status === 'open', r = caseView.accuse(a); if (live && r) sessionLog.accused(a, r); return r; }
     case 'dot': return caseView.dot(a);
     case 'answer': return caseView.answer ? caseView.answer(a) : null; // seal cases: answer the open question
     case 'guess': return caseView.guess ? caseView.guess(a) : null;
-    case 'again': caseView.reset(); teleport(agent, START.at, START.face); cam.yaw = agent.heading; cam.pitch = START.pitch; caseView.caseFile(); return true;
+    case 'again': caseView.reset(); sessionLog.caseStarted(state.clock); teleport(agent, START.at, START.face); cam.yaw = agent.heading; cam.pitch = START.pitch; caseView.caseFile(); return true;
     case 'interact': { const t = caseView.targets.find((q) => q.kind === a && String(q.id) === String(b)); return t ? approach(t) : null; }
     case 'feedback': {
       if (state.state === 'playing' && !state.paused) act('pause');
-      const context = [`Game version: ${VERSION}`, `Where: ${state.area || 'between places'} (x ${agent.x.toFixed(0)}, z ${agent.z.toFixed(0)})`, `Case: ${def.id}`, `Time of day: ${def.time}`].join('\n');
+      watch();
+      const context = [`Game version: ${VERSION}`, `Where: ${state.area || 'between places'} (x ${agent.x.toFixed(0)}, z ${agent.z.toFixed(0)})`, `Case: ${def.id}`, `Time of day: ${def.time}`,
+        ...sessionLog.summary({ state, c: caseView.c, chase, clock: state.clock, def })];
       const device = `${innerWidth}x${innerHeight} @${devicePixelRatio}x · ${navigator.userAgent}`;
-      const u = new URL(`${REPO}/issues/new`);
-      u.searchParams.set('template', 'feedback.yml'); u.searchParams.set('labels', 'feedback');
-      u.searchParams.set('context', context); u.searchParams.set('device', device);
-      window.open(u.href, '_blank', 'noopener');
+      const href = feedbackUrl(REPO, context, sessionLog.recent(), device);
+      stats.lastFeedbackUrl = href;
+      window.open(href, '_blank', 'noopener');
       return true;
     }
     case 'turn': cam.yaw += a; cam.lastDrag = state.clock; return true;
@@ -139,8 +142,12 @@ document.addEventListener('click', (e) => {
 const runPill = document.getElementById('run');
 const readKeys = setupUI({ canvas, act, onTap, onDrag: (dx, dy) => { cam.yaw -= dx * 0.006; cam.pitch = Math.max(PITCH[0], Math.min(PITCH[1], cam.pitch + dy * 0.004)); cam.lastDrag = state.clock; } });
 
-// Advances the simulation by dt seconds (does nothing while paused or on the title).
-function step(dt) {
+// Advances the simulation by dt seconds (does nothing while paused or on the title), then notes
+// what changed in the session log.
+const seen = { state, c: null, chase: null, clock: 0 }; // reused every frame
+const watch = (dt = 0) => { seen.c = caseView.c; seen.chase = chase; seen.clock = state.clock; sessionLog.watch(seen, state.paused || state.map ? 0 : dt); };
+function step(dt) { advance(dt); watch(dt); }
+function advance(dt) {
   if (state.state === 'chase') { if (!state.paused) chase.step(dt, innerWidth, innerHeight); return; }
   if (state.state !== 'playing' || state.paused || state.map || caseView.sheetOpen()) { updateCamera(camera, agent, dt, state.clock); return; }
   state.clock += dt;
@@ -194,5 +201,5 @@ window.__agent = {
   get case() { return caseView.c; }, caseView, navaids, get chase() { return chase; },
   get paused() { return loop.paused; }, set paused(v) { loop.paused = v; last = performance.now(); },
   setPaused(v) { if (!!v !== state.paused) act('pause'); },
-  walkable, findPath, areaAt, version: VERSION,
+  sessionLog, walkable, findPath, areaAt, version: VERSION,
 };
