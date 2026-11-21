@@ -136,15 +136,36 @@ export function makeAudio() {
   };
 
   // The first tap or key anywhere starts sound (when not muted).
+  // iPhone: Web Audio is muted by the silent switch unless the page asks to play like media. Safari
+  // 16.4+ has navigator.audioSession; older iOS needs a silent HTML <audio> playing alongside.
+  let media = null;
+  function playThroughSilentSwitch() {
+    const s = navigator.audioSession;
+    if (s) { if (s.type !== 'playback') try { s.type = 'playback'; } catch { /* not allowed */ } return; }
+    if (!/iP(hone|ad|od)/.test(navigator.userAgent) && !(navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent))) return;
+    if (!media) { media = new Audio(silentWav()); media.loop = true; media.setAttribute('playsinline', ''); }
+    if (media.paused) media.play().catch(() => {});
+  }
+  function silentWav() { // a quarter second of silence, 8 kHz mono, as a data URI
+    const n = 2000, b = new Uint8Array(44 + n), v = new DataView(b.buffer), w = (o, t) => { for (let i = 0; i < t.length; i++) b[o + i] = t.charCodeAt(i); };
+    w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, 'data'); v.setUint32(40, n, true); b.fill(128, 44);
+    let s = ''; for (const c of b) s += String.fromCharCode(c);
+    return 'data:audio/wav;base64,' + btoa(s);
+  }
+
   a.unlock = () => {
-    if (a.muted) return;
+    if (a.muted || document.hidden) return;
+    playThroughSilentSwitch();
     build();
-    if (a.ctx && a.ctx.state === 'suspended' && !document.hidden) a.ctx.resume().catch(() => {});
+    if (!a.ctx || a.ctx.state === 'running') return;
+    a.ctx.resume().catch(() => {}); // suspended, or 'interrupted' after a call on iPhone
+    const s = a.ctx.createBufferSource(); s.buffer = a.ctx.createBuffer(1, 1, a.ctx.sampleRate); s.connect(a.ctx.destination); s.start(); // a silent sound inside the tap wakes older iOS
   };
 
   a.setMuted = (on) => {
     a.muted = !!on; store.set(a.muted);
-    if (a.muted) { if (a.ctx && a.ctx.state === 'running') a.ctx.suspend().catch(() => {}); }
+    if (a.muted) { if (a.ctx && a.ctx.state === 'running') a.ctx.suspend().catch(() => {}); if (media) media.pause(); }
     else a.unlock();
     return a.muted;
   };
@@ -204,6 +225,6 @@ export function makeAudio() {
 
   // A touch pointerdown is not a user activation (Chrome's autoplay rule, and iOS Safari wants touchend or click), so listen to all of them; unlock is idempotent.
   for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) addEventListener(ev, a.unlock, { capture: true });
-  document.addEventListener('visibilitychange', () => { if (!a.ctx || a.muted) return; if (document.hidden) a.ctx.suspend().catch(() => {}); else a.ctx.resume().catch(() => {}); });
+  document.addEventListener('visibilitychange', () => { if (!a.ctx || a.muted) return; if (document.hidden) { a.ctx.suspend().catch(() => {}); if (media) media.pause(); } else a.ctx.resume().catch(() => {}); }); // the silent <audio> restarts on the next tap
   return a;
 }
