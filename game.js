@@ -16,6 +16,7 @@ import { makeSealView } from './src/case/sealview.js';
 import { makeNavaids } from './src/navaids.js';
 import { makeChase } from './src/chase/chase.js';
 import { makeSessionLog, feedbackUrl } from './src/sessionlog.js';
+import { makeAudio } from './src/audio.js';
 
 const VERSION = new URL(import.meta.url).searchParams.get('v') || 'local';
 const REPO = 'https://github.com/hitoshi85/secret-agent-simulator';
@@ -58,6 +59,8 @@ marker.rotation.x = -Math.PI / 2; marker.position.y = 0.04; scene.add(marker);
 const state = { state: 'title', paused: false, map: false, area: areaAt(...START.at), clock: 0 };
 const stats = { frames: 0, calls: 0, triangles: 0, people: crowd.length, buildings: city.userData.count, lastWalkFound: null };
 
+const audio = makeAudio();
+let lastHeat = 0; // a rise in Heat plays the sting
 let chase = null; // the opening car chase, built the first time it starts
 function resize() {
   const w = innerWidth, h = innerHeight;
@@ -117,6 +120,7 @@ function act(action, a, b, c) {
       show('paused', state.paused);
       if (chase) chase.pauseMap(state.state === 'chase' && state.paused);
       document.getElementById('pause').textContent = state.paused ? '▶' : '❚❚';
+      audio.pause(state.paused);
       return state.paused;
     }
     case 'phone': if (state.state !== 'playing') return false; if (!caseView.phone()) toast('No messages from your handler'); return true;
@@ -140,6 +144,7 @@ function act(action, a, b, c) {
       window.open(href, '_blank', 'noopener');
       return true;
     }
+    case 'sound': soundLabel(audio.setMuted(!audio.muted)); return !audio.muted;
     case 'turn': cam.yaw += a; cam.lastDrag = state.clock; return true;
   }
   return false;
@@ -153,6 +158,11 @@ document.addEventListener('click', (e) => {
   if (k === 'talk') caseView?.hideTalk(); else act(k, Number(b.dataset.suspect));
 });
 
+// Every button ticks; the pause screen's sound button shows and flips mute.
+document.addEventListener('click', (e) => { if (e.target.closest('button')) audio.tick(); });
+const soundLabel = (muted) => { document.getElementById('sound').textContent = muted ? '🔇 Sound off' : '🔊 Sound on'; };
+soundLabel(audio.muted);
+
 const runPill = document.getElementById('run');
 const readKeys = setupUI({ canvas, act, onTap, onDrag: (dx, dy) => { cam.yaw -= dx * 0.006; cam.pitch = Math.max(PITCH[0], Math.min(PITCH[1], cam.pitch + dy * 0.004)); cam.lastDrag = state.clock; } });
 
@@ -162,7 +172,11 @@ const seen = { state, c: null, chase: null, clock: 0 }; // reused every frame
 const watch = (dt = 0) => { seen.c = caseView?.c ?? null; seen.chase = chase; seen.clock = state.clock; sessionLog.watch(seen, state.paused || state.map ? 0 : dt); };
 function step(dt) { advance(dt); watch(dt); }
 function advance(dt) {
-  if (state.state === 'chase') { if (!state.paused) chase.step(dt, innerWidth, innerHeight); return; }
+  const heat = caseView?.c ? caseView.c.heat : 0;
+  if (heat > lastHeat) audio.sting();
+  lastHeat = heat;
+  if (state.state === 'chase') { if (!state.paused) chase.step(dt, innerWidth, innerHeight); audio.chase(chase); return; }
+  audio.chase(null);
   if (state.state !== 'playing' || state.paused || state.map || caseView.sheetOpen()) { updateCamera(camera, agent, dt, state.clock); return; }
   state.clock += dt;
   const k = readKeys();
@@ -174,6 +188,7 @@ function advance(dt) {
   }
   if (dir) pending = null;
   updateAgent(agent, dt, dir, k.run);
+  audio.walk(agent);
   if (pending && !agent.path) { // arrived: talk to them, or say they moved on
     const t = pending; pending = null; const [x, z] = caseView.where(t);
     if (Math.hypot(x - agent.x, z - agent.z) <= REACH + 2) caseView.interact(t); else toast('They moved on. Tap them again');
@@ -200,9 +215,12 @@ let last = performance.now();
 const loop = {
   paused: false, // tests set this to drive frames themselves
 };
+const $id = (id) => document.getElementById(id);
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   if (!loop.paused) { step(dt); render(); }
+  // The quiet music bed: on the title, the case file and the chase cards only.
+  audio.bed(!$id('title').hidden || !$id('chaseCard').hidden || (!$id('casesheet').hidden && $id('caseBody').classList.contains('file')));
   requestAnimationFrame(frame);
 }
 cam.pitch = START.pitch; updateCamera(camera, agent, 0, 0, true);
@@ -212,7 +230,7 @@ requestAnimationFrame(frame);
 // Test hook (see CLAUDE.md). Keep it working when refactoring; add to it for new features.
 window.__agent = {
   state, stats, agent, crowd, act, step, render, cam, PLACES,
-  get case() { return caseView?.c; }, get caseView() { return caseView; }, get navaids() { return navaids; }, get caseId() { return def.id; }, get chase() { return chase; },
+  get case() { return caseView?.c; }, get caseView() { return caseView; }, get navaids() { return navaids; }, get caseId() { return def.id; }, audio, get chase() { return chase; },
   get paused() { return loop.paused; }, set paused(v) { loop.paused = v; last = performance.now(); },
   setPaused(v) { if (!!v !== state.paused) act('pause'); },
   sessionLog, walkable, findPath, areaAt, version: VERSION,
