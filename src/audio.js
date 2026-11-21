@@ -1,8 +1,8 @@
 // All the game's sound, made in code with Web Audio (no audio files): the red car as a soft hybrid (an
 // electric whine following its speed, a quiet petrol hum under load), road and gravel under the tyres,
 // tyre scrub on hard braking, thumps on landing after a crest and on crashes, footsteps on stone, a short
-// piano sting when Heat rises, and UI ticks. Slow piano jazz plays everywhere except while driving
-// (Hitoshi's pick, 2026-11-21), a little softer in Florence so the footsteps come through.
+// piano sting when Heat rises, and UI ticks. Slow piano jazz plays all the time (Hitoshi's pick,
+// 2026-11-21), softer under the car and on foot in Florence so the engine and footsteps come through.
 // Nothing starts before the first tap or key (phone autoplay rules), and it stays silent and harmless
 // when Web Audio is missing. Mute lives on the pause screen and is remembered on the phone.
 // Budget: live nodes are counted, and a one-shot that would go over MAX_NODES is skipped.
@@ -152,7 +152,7 @@ export function makeAudio() {
   }
 
   // The bed: slow piano jazz, a slow, swung, original turnaround on felt piano with a walking bass.
-  // It plays everywhere but the drive, a little softer in Florence. Scheduled a little ahead from each
+  // It plays all the time, softer under the car and in Florence. Scheduled a little ahead from each
   // frame; its notes stop when it fades out.
   const JAZZ = [ // bars of [bass, chord voicing] in F: Fmaj9, D7b9, Gm9, C13, Am7, D7, Gm9, C7sus (original voicings)
     [41, [57, 60, 64, 67]], [38, [54, 60, 63, 66]], [43, [58, 62, 65, 69]], [36, [58, 62, 64, 69]],
@@ -189,14 +189,15 @@ export function makeAudio() {
       bed.bar++; bed.next += BAR;
     }
   }
-  a.bed = (on, soft = false) => {
+  a.bed = (on, level = 1) => {
     if (!a.ctx || a.muted || a.ctx.state !== 'running') return;
     on = on && !paused; stats.bed = on;
     const playing = bed && !bed.off;
     if (on && !playing && !warm()) return; // the notes are still being made
     if (on && !playing) startBed(); else if (!on && playing) stopBed();
     if (!on) return;
-    const t = a.ctx.currentTime, level = soft ? 0.7 : 1;
+    const t = a.ctx.currentTime;
+    stats.bedLevel = level;
     if (bed.level !== level) { bed.level = level; bed.out.gain.setTargetAtTime(level, t, 0.8); }
     if (bed.next < t) bed.next = t + 0.05; // after a long frame (loading the chase), skip the missed notes instead of catching up
     scheduleBed(t);
