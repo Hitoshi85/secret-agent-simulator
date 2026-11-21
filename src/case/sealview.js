@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { newSealCase, openSeal, answer, letters, guess, canGuess, brokenCount, claim } from './seals.js';
 import { lamps, isComplete } from './quiz.js';
+import { handlerHTML } from '../people/portrait.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
@@ -64,7 +65,7 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
     <h1>${esc(def.title)}</h1>${def.briefing.map((p) => `<p>${p}</p>`).join('')}
     <ul>${def.tasks.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
     <button type="button" data-case="briefed">Take the case</button>`, 'file');
-  v.handler = () => open(`<p class="kicker">Phone · Handler</p>${def.handler.map((m) => `<p class="msg">${m}</p>`).join('')}
+  v.handler = () => open(`<p class="kicker">Phone · Handler</p>${handlerHTML(def.handler)}
     <button type="button" class="close" data-case="close">Got it</button>`, 'gadget');
   v.phone = () => { v.handler(); return true; }; v.accuse = () => null; v.dot = () => null;
 

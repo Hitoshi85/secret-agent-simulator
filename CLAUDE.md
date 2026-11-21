@@ -22,7 +22,8 @@ folder and point the import map at it. No bundler.
 | `src/world/buildings.js` | The ordinary city: palazzi filling every 16 m cell that is not a street or landmark, merged into a few meshes |
 | `src/world/landmarks.js` | Duomo, campanile, Baptistery, Palazzo Vecchio, Loggia, Neptune, the Arno and Ponte Vecchio, the hills |
 | `src/world/merge.js` | `mergeByMaterial`: bakes static meshes into one mesh per material (keeps draw calls low) |
-| `src/people/figure.js` | People as one vertex-coloured mesh per walking pose; looks (`randomLook`), `makeFigure`, `setPose` |
+| `src/people/figure.js` | People as one vertex-coloured mesh per walking pose, limbs on joints, painted faces from one atlas; looks (`randomLook`), `makeFigure`, `setPose` |
+| `src/people/portrait.js` | Painted noir portraits drawn as SVG: the face shapes (`FACES`), a look's portrait (`lookPortrait`), the handler, the atlas faces |
 | `src/people/crowd.js` | The strolling crowd |
 | `src/agent.js` | The player's agent: tap-to-walk paths, keyboard walking, the placeholder look |
 | `src/camera.js` | Third-person follow camera: yaw and pitch from drags, swing behind while walking, pull-in near walls |
@@ -94,7 +95,7 @@ checked by `tests/phone-checks.spec.js` (250 draw calls, 400k triangles, 4 ms of
 `audio` (`muted`, `ctx`, `level()` (how loud the mix is now), `out()` (the final mix), `stats`: `state`, `nodes`, `peak`, `engineHz`, `rpm`, `gear`, `squeal`, `bed`, `played` counts), `case` (the running case: `suspects`, `thief`, `notes`, `heat`, `status`), `caseView` (its `targets`, `leads()`), `navaids` (`leads`: each open lead's `id`, `d` metres, `ahead`),
 `step(dt)` (advance the simulation; does nothing while paused, on the title or with the Map open), `render()`,
 `paused` (set true to stop the real-time loop and drive frames from the test), `setPaused(bool)` (player pause),
-`PLACES`, `walkable(x, z)`, `findPath(ax, az, bx, bz)`, `areaAt(x, z)`, `version`.
+`PLACES`, `walkable(x, z)`, `findPath(ax, az, bx, bz)`, `areaAt(x, z)`, `version`, `faces` (the walking people's face atlas: `ready`, `tiles`).
 Keep it working when refactoring; add to it when a new feature needs checking.
 `tests/smoke.spec.js` walks the agent from the Duomo to Ponte Vecchio. `tests/case.spec.js` checks every case shuffle is solvable and plays the dossier case end to end. `tests/phone-checks.spec.js` saves phone
 screenshots to `phone-screenshots/` (a CI artifact) and enforces the rendering budget. `tests/mobile.spec.js`

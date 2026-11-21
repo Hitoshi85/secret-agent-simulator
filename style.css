@@ -54,6 +54,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1612; col
 .talk #talkText { font-family: Georgia, serif; font-size: 16px; line-height: 1.4; margin: 6px 0 0; }
 .talk .note { font-size: 13px; line-height: 1.35; margin: 8px 0 0; padding-left: 14px; position: relative; }
 .talk .note::before { content: ""; position: absolute; left: 0; top: 5px; width: 8px; height: 8px; border-radius: 50%; background: #c9a24a; }
+.talk .por { position: absolute; left: 12px; top: -112px; width: 128px; height: 153px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, .55), 0 0 0 3px #f4ecdc; }
+.talk.face #talkWho, .talk.face .name { margin-left: 138px !important; }
+.talk.face .name { font-family: Georgia, serif; font-size: 19px; font-weight: 700; margin: 3px 0 12px; min-height: 22px; }
 .talk .x { position: absolute; top: 6px; right: 6px; width: 44px; height: 44px; border: 0; background: none; font-size: 18px; color: #6b5f4c; }
 .sheet.case { text-align: left; width: min(380px, 92vw); position: relative; }
 .sheet.case h2 { font-size: 20px; margin: 4px 0 8px; }
@@ -67,16 +70,18 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1612; col
 .card { background: #fffaf0; border: 1px solid #e0d4bb; border-radius: 12px; padding: 8px; display: flex; gap: 8px; align-items: center; font-size: 12px; line-height: 1.3; position: relative; }
 .card.out { opacity: .38; }
 .card.out::after { content: ""; position: absolute; left: 8px; right: 8px; top: 50%; border-top: 2px solid #a8322a; }
-.fig { width: 30px; height: 54px; position: relative; flex: none; }
-.fig i { position: absolute; display: block; }
-.fig .hd { left: 9px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #d9a77f; }
-.fig .hat { left: 6px; top: 0; width: 18px; height: 6px; border-radius: 3px; z-index: 1; }
-.fig .bd { left: 4px; top: 14px; width: 22px; height: 26px; border-radius: 6px 6px 3px 3px; }
-.fig .bg { right: -2px; top: 24px; width: 9px; height: 11px; border-radius: 2px; }
-.fig .lg { left: 8px; top: 40px; width: 5px; height: 14px; background: #333; box-shadow: 9px 0 0 #333; }
+.card .face { width: 52px; height: 62px; flex: none; border-radius: 8px; display: block; }
+.card.out .face { filter: grayscale(1); }
 .sheet.gadget { background: #0e1218; color: #e6ebf2; border: 3px solid #3a4250; border-radius: 30px; }
 .sheet.gadget .kicker { color: #e8c45c; }
 .sheet.gadget p, .sheet.gadget .small { color: #9aa4b5; }
+.sheet.gadget .contact { display: flex; gap: 14px; align-items: center; margin: 10px 0 12px; text-align: left; }
+.sheet.gadget .contact .av { width: 76px; height: 91px; border-radius: 14px; box-shadow: 0 0 0 2px #3a4250; }
+.sheet.gadget .contact .n { font-size: 18px; font-weight: 700; color: #e6ebf2; }
+.sheet.gadget .contact .s { font-size: 12px; color: #8fd19e; margin-top: 3px; }
+.sheet.gadget .msgrow { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 8px; }
+.sheet.gadget .msgrow .mini { flex: none; width: 30px; height: 30px; border-radius: 50%; }
+.sheet.gadget .msgrow .msg { margin: 0 !important; flex: 1; border-bottom-left-radius: 4px; }
 .sheet.gadget .msg { background: #1c232e; color: #cfd6e2; border-radius: 14px; padding: 10px 12px; font-style: italic; }
 .pad { display: grid; grid-template-columns: repeat(3, 64px); gap: 14px; justify-content: center; margin: 14px 0; }
 .sheet .pad .dot { width: 64px; height: 64px; min-height: 0; margin: 0; border-radius: 50%; background: #0e1218; border: 2px solid #4a5363; }

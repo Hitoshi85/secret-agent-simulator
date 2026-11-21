@@ -93,7 +93,9 @@ test('walk up to a witness, crack the phone, and the notebook keeps track', asyn
   expect(r.notes, 'the vague clue is noted').toBe(1);
   expect(r.out, 'but crosses no one out').toBe(0);
   await expect(page.locator('#talk')).toBeVisible();
-  await expect(page.locator('#talkWho')).toHaveText('Witness · Flower seller');
+  await expect(page.locator('#talkWho')).toHaveText('Witness');
+  await expect(page.locator('#talkName')).toHaveText('Flower seller');
+  await expect(page.locator('#talkPor')).toBeVisible();
 
   // The phone: pick it up, get the order wrong once, then right.
   await page.evaluate(() => { const A = window.__agent; A.act('jump', 'ponte'); A.agent.x = -140; A.agent.z = 592; A.act('interact', 'gadget', 'phone'); A.act('phone'); });
