@@ -20,7 +20,7 @@ export function makeAudio() {
   const AC = window.AudioContext || window.webkitAudioContext;
   const stats = { state: 'off', nodes: 0, peak: 0, skipped: 0, engineHz: 0, squeal: 0, rumble: 0, played: { step: 0, land: 0, crash: 0, sting: 0, tick: 0 } };
   const a = { stats, muted: store.get(), ctx: null };
-  let bed = null, master = null, chaseBus = null, eng = null, noise = null, plucks = null, paused = false, lastCrashes = 0, lastWalked = 0;
+  let bed = null, notes = null, master = null, eng = null, noise = null, plucks = null, paused = false, lastCrashes = 0, lastWalked = 0;
 
   const live = (k) => { stats.nodes += k; stats.peak = Math.max(stats.peak, stats.nodes); };
 
@@ -33,21 +33,31 @@ export function makeAudio() {
     plucks = [41.2, 82.4].map((f) => pluckBuffer(ctx, f));
     const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4; comp.connect(ctx.destination);
     master = ctx.createGain(); master.gain.value = 0.8; master.connect(comp);
-    chaseBus = ctx.createGain(); chaseBus.gain.value = 0; chaseBus.connect(master);
-    // The engine: a buzzy saw and a square an octave down, through a filter that opens with speed.
+    live(3); // compressor, master, destination
+    ctx.onstatechange = () => { stats.state = ctx.state; };
+    stats.state = ctx.state;
+  }
+
+  // The car, built when a drive starts and stopped when it ends (nothing runs on foot): a buzzy saw
+  // and a square an octave down through a filter that opens with speed, and looped noise under the
+  // tyres, low for road and gravel and a narrow band for the brake squeal.
+  function startCar() {
+    const ctx = a.ctx, bus = ctx.createGain(); bus.gain.value = 0; bus.connect(master);
     const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
     o1.type = 'sawtooth'; o2.type = 'square'; o2.detune.value = -8; f.type = 'lowpass'; f.Q.value = 2; g.gain.value = 0.12;
-    o1.connect(f); o2.connect(f); f.connect(g); g.connect(chaseBus);
-    // The tyres: a looped noise, low for road and gravel, a narrow band for the brake squeal.
+    o1.connect(f); o2.connect(f); f.connect(g); g.connect(bus);
     const n = ctx.createBufferSource(); n.buffer = noise; n.loop = true;
     const rf = ctx.createBiquadFilter(), rg = ctx.createGain(), sf = ctx.createBiquadFilter(), sg = ctx.createGain();
     rf.type = 'lowpass'; rf.frequency.value = 320; rg.gain.value = 0; sf.type = 'bandpass'; sf.frequency.value = 2700; sf.Q.value = 9; sg.gain.value = 0;
-    n.connect(rf); rf.connect(rg); rg.connect(chaseBus); n.connect(sf); sf.connect(sg); sg.connect(chaseBus);
-    o1.start(); o2.start(); n.start();
-    eng = { o1, o2, f, g, rg, sg };
-    live(13); // compressor, master, bus, 2 oscillators, filter, gain, noise, 2 filters, 2 gains, destination
-    ctx.onstatechange = () => { stats.state = ctx.state; };
-    stats.state = ctx.state;
+    n.connect(rf); rf.connect(rg); rg.connect(bus); n.connect(sf); sf.connect(sg); sg.connect(bus);
+    o1.start(); o2.start(); n.start(); live(12);
+    eng = { bus, o1, o2, n, f, g, rg, sg };
+  }
+  function stopCar() {
+    const e = eng, t = a.ctx.currentTime; eng = null; stats.squeal = stats.rumble = 0;
+    e.bus.gain.setTargetAtTime(0, t, 0.1);
+    for (const o of [e.o1, e.o2, e.n]) o.stop(t + 0.5);
+    e.o1.onended = () => { e.bus.disconnect(); live(-12); };
   }
 
   // Karplus-Strong plucked string, computed into a buffer once.
@@ -87,9 +97,10 @@ export function makeAudio() {
     s.connect(g); g.connect(out); s.start(t + delay); done(s, 2); return true;
   }
 
-  // The quiet bed: a drone and an echoing plucked arpeggio, built the first time it is wanted and
-  // scheduled a little ahead from each frame.
-  function buildBed() {
+
+  // The quiet bed: a drone and an echoing plucked arpeggio, started when a card shows, stopped when
+  // it goes, and scheduled a little ahead from each frame.
+  function startBed() {
     const ctx = a.ctx, out = ctx.createGain(), dl = ctx.createDelay(1), lp = ctx.createBiquadFilter(), fb = ctx.createGain(), wet = ctx.createGain();
     out.gain.value = 0; out.connect(master); dl.delayTime.value = 0.36; lp.frequency.value = 2500; fb.gain.value = 0.3; wet.gain.value = 0.35;
     dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(wet); wet.connect(out);
@@ -97,21 +108,28 @@ export function makeAudio() {
     o1.type = o2.type = 'sawtooth'; o1.frequency.value = mtof(33); o2.frequency.value = mtof(45); lfo.frequency.value = 5; lg.gain.value = 3; df.frequency.value = 500; dg.gain.value = 0.035;
     lfo.connect(lg); lg.connect(o1.detune); lg.connect(o2.detune); o1.connect(df); o2.connect(df); df.connect(dg); dg.connect(out);
     o1.start(); o2.start(); lfo.start(); live(11);
-    const notes = {}; for (const m of new Set(BED)) notes[m] = pluckBuffer(ctx, mtof(m));
-    bed = { out, dl, notes, i: 0, next: 0, on: false };
+    if (!notes) { notes = {}; for (const m of new Set(BED)) notes[m] = pluckBuffer(a.ctx, mtof(m)); }
+    const t = ctx.currentTime; out.gain.setTargetAtTime(0.5, t, 0.6);
+    bed = { out, dl, oscs: [o1, o2, lfo], i: bed ? bed.i : 0, next: t + 0.05 };
+  }
+  function stopBed() {
+    const b = bed, t = a.ctx.currentTime; bed = { i: b.i, off: true };
+    b.out.gain.setTargetAtTime(0, t, 0.15);
+    for (const o of b.oscs) o.stop(t + 0.8);
+    b.oscs[0].onended = () => { b.out.disconnect(); live(-11); };
   }
   a.bed = (on) => {
     if (!a.ctx || a.muted || a.ctx.state !== 'running') return;
     on = on && !paused; stats.bed = on;
-    if (!bed) { if (!on) return; buildBed(); }
-    const t = a.ctx.currentTime;
-    if (on !== bed.on) { bed.on = on; bed.out.gain.setTargetAtTime(on ? 0.5 : 0, t, on ? 0.6 : 0.15); if (on) bed.next = Math.max(bed.next, t + 0.05); }
+    const playing = bed && !bed.off;
+    if (on && !playing) startBed(); else if (!on && playing) stopBed();
     if (!on) return;
+    const t = a.ctx.currentTime;
     if (bed.next < t) bed.next = t + 0.05; // after a long frame (loading the chase), skip the missed notes instead of catching up
     while (bed.next < t + 0.2) { // a pluck every eighth note, accent on each beat, some go through the echo
       const st = voice(2); if (st === null) { bed.next += STEP; continue; }
       const s = a.ctx.createBufferSource(), g = a.ctx.createGain(), at = Math.max(bed.next, st);
-      s.buffer = bed.notes[BED[bed.i % BED.length]]; g.gain.setValueAtTime(bed.i % 4 ? 0.18 : 0.3, at); g.gain.setTargetAtTime(0.0001, at + 1.1, 0.1);
+      s.buffer = notes[BED[bed.i % BED.length]]; g.gain.setValueAtTime(bed.i % 4 ? 0.18 : 0.3, at); g.gain.setTargetAtTime(0.0001, at + 1.1, 0.1);
       s.connect(g); g.connect(bed.out); g.connect(bed.dl); s.start(at); s.stop(at + 1.5); done(s, 2);
       bed.i++; bed.next += STEP;
     }
@@ -133,7 +151,7 @@ export function makeAudio() {
 
   a.pause = (on) => {
     paused = on;
-    if (chaseBus) chaseBus.gain.setTargetAtTime(0, a.ctx.currentTime, 0.05);
+    if (eng) eng.bus.gain.setTargetAtTime(0, a.ctx.currentTime, 0.05);
   };
 
   // Each frame of the chase (null when not driving): engine, tyres, brake, landings and crashes.
@@ -141,8 +159,10 @@ export function makeAudio() {
     if (!a.ctx || a.muted) return;
     const t = a.ctx.currentTime, p = c && c.status === 'driving' && !paused ? c.player : null;
     const count = c && c.status === 'count'; // engine idling through 3-2-1
-    chaseBus.gain.setTargetAtTime(p || count ? 1 : 0, t, p || count ? 0.08 : 0.25);
-    if (!p) { if (count) setEngine(0, t); eng.rg.gain.setTargetAtTime(0, t, 0.05); eng.sg.gain.setTargetAtTime(0, t, 0.03); stats.squeal = stats.rumble = 0; return; }
+    if (!p && !count) { if (eng) stopCar(); return; }
+    if (!eng) startCar();
+    eng.bus.gain.setTargetAtTime(1, t, 0.08);
+    if (!p) { setEngine(0, t); eng.rg.gain.setTargetAtTime(0, t, 0.05); eng.sg.gain.setTargetAtTime(0, t, 0.03); stats.squeal = stats.rumble = 0; return; }
     setEngine(p.v, t, c.brake, p.air > 0.05);
     const off = Math.abs(p.d) > 3.6, v = Math.min(1, p.v / 35);
     stats.rumble = p.air > 0.05 ? 0 : (off ? 0.35 : 0.06) * v;
