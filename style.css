@@ -179,7 +179,13 @@ body.chasing .chasehelp { display: block; }
 #chase .steer.r b, #chase .steer.r span { right: 18px; }
 #chase .steer.on b { background: #e8c45c; color: #1b1f26; border-color: #e8c45c; }
 #cSpeedo { position: absolute; left: 8px; bottom: calc(12px + env(safe-area-inset-bottom)); width: 104px; height: 104px; }
-#cBrake { position: absolute; left: 58%; transform: translateX(-50%); bottom: calc(22px + env(safe-area-inset-bottom)); width: 140px; min-height: 54px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, .25); background: rgba(16, 20, 27, .86); color: #fff; font: 700 16px -apple-system, Helvetica, sans-serif; pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; }
+#cBrake { position: absolute; right: 12px; bottom: calc(22px + env(safe-area-inset-bottom)); width: 100px; min-height: 54px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, .25); background: rgba(16, 20, 27, .86); color: #fff; font: 700 16px -apple-system, Helvetica, sans-serif; pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; }
+#cWheel { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(36px + env(safe-area-inset-bottom)); width: 150px; height: 26px; border-radius: 13px; background: rgba(16, 20, 27, .72); pointer-events: none; }
+#cWheel i { position: absolute; top: 12px; left: 18px; right: 18px; height: 2px; background: rgba(244, 236, 220, .5); }
+#cWheel u { position: absolute; top: 7px; left: 74px; width: 2px; height: 12px; background: rgba(244, 236, 220, .8); }
+#cWheel span { position: absolute; top: 5px; font: 700 12px -apple-system, Helvetica, sans-serif; color: #f4ecdc; }
+#cWheel .l { left: 6px; } #cWheel .r { right: 6px; }
+#cWheel b { position: absolute; top: 4px; left: 66px; width: 18px; height: 18px; border-radius: 50%; background: #c9a24a; border: 2px solid #f4ecdc; box-sizing: border-box; }
 #cBrake.on { background: #c0291e; border-color: #ff7a5a; box-shadow: 0 0 22px rgba(255, 58, 34, .55); }
 .ctag { position: absolute; left: 0; top: 0; background: rgba(16, 20, 27, .86); border: 2px solid #e8c45c; color: #e8c45c; border-radius: 12px; padding: 3px 9px; font: 800 14px -apple-system, Helvetica, sans-serif; white-space: nowrap; }
 .ctag::after { content: ""; position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); border: 6px solid transparent; border-top-color: #e8c45c; }

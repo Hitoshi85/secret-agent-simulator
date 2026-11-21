@@ -1,6 +1,7 @@
-// The opening car chase, Pienza to Florence: its own scene, camera and HUD, three stages of about a
-// minute each. Hold the left or right half of the screen to steer (or arrows / A D), Brake (Space,
-// Down or S). Keep the black off-roader in sight; lose him for 12 seconds and the stage restarts.
+// The opening car chase, Pienza to Florence: its own scene, camera and HUD, one drive of about 45 s
+// on a road generated fresh every run. Hold the left or right half of the screen to steer (or arrows /
+// A D), Brake (Space, Down or S). Keep the black off-roader in sight for 30 s straight, or catch right
+// up behind him, and the chase is won early; lose him for 12 seconds and the drive restarts.
 import * as THREE from 'three';
 import { skyTex } from '../world/textures.js';
 import { buildStage, sampleRoad, STAGES } from './land.js';
@@ -9,6 +10,8 @@ import { newCar, drivePlayer, driveSUV, bump, moveTraffic, sightStep, secondsLef
 
 const $ = (id) => document.getElementById(id);
 const r1 = {}, r2 = {}, v3 = new THREE.Vector3(), look = new THREE.Vector3();
+const PLAY = 1;                       // stages played (STAGES has three; the chase uses the first)
+export const WIN_SIGHT = 30, CATCH_GAP = 8; // seconds in sight in a row, or metres behind him, to win
 
 export function makeChase({ renderer, onDone, toast }) {
   const scene = new THREE.Scene();
@@ -40,12 +43,12 @@ export function makeChase({ renderer, onDone, toast }) {
       if (o.geometry) o.geometry.dispose();
       for (const m of [].concat(o.material || [])) { if (m.map) m.map.dispose(); m.dispose(); }
     }); }
-    c.world = buildStage(k); c.road = c.world.road; scene.add(c.world.group);
+    c.world = buildStage(k, c.seed); c.streak = 0; c.wheel = 0; c.road = c.world.road; scene.add(c.world.group);
     c.stage = k; c.player = newCar(10, 1.1); c.player.v = 28; c.suv = newCar(55, 1.1); c.suv.v = 34;
     for (const car of [c.player, c.suv]) { sampleRoad(c.road, car.s, r1); car.y = r1.y; car.vy = r1.slope * car.v; } // start on the road, following its slope
-    c.traffic = traffic.map((m, i) => ({ ...newCar(200 + i * 230, -1.4), v: 17 + i * 2, mesh: m }));
+    c.traffic = traffic.map((m, i) => ({ ...newCar(160 + i * 200 + Math.random() * 120, -1.4), v: 15 + Math.random() * 8, mesh: m }));
     c.sight = { value: 1, visible: true, wasVisible: true, losses: 0 }; c.clock = 0;
-    $('locName').textContent = STAGES[k].place; $('locSub').textContent = `${STAGES[k].name} · stage ${k + 1} of 3`; place(); fitCam(true);
+    $('locName').textContent = STAGES[k].place; $('locSub').textContent = `${STAGES[k].name} · to Florence`; place(); fitCam(true);
   }
 
   // Road coordinates to the scene: right of the road is (-cos dir, sin dir).
@@ -110,22 +113,23 @@ export function makeChase({ renderer, onDone, toast }) {
     $('cSightBar').style.width = `${(s.value * 100).toFixed(1)}%`;
     $('cSight').classList.toggle('alarm', !s.visible);
     $('cSightL').textContent = s.visible ? 'IN SIGHT' : 'LOST';
-    $('cSightN').textContent = s.visible ? '' : `${secondsLeft(s)} s`;
+    $('cSightN').textContent = s.visible ? `${Math.min(WIN_SIGHT, Math.floor(c.streak))}/${WIN_SIGHT} s` : `${secondsLeft(s)} s`;
     const left = Math.max(0, (c.road.end - c.player.s) / 33);
-    $('locSub').textContent = `Stage ${c.stage + 1} of 3 · ${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')} left`;
+    $('locSub').textContent = `${STAGES[c.stage].name} · ${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')} left`;
     const pill = $('cPill');
     if (!s.visible) { pill.hidden = false; pill.className = 'cpill red'; pill.textContent = `Out of sight · ${secondsLeft(s)} s`; }
     else if (c.player.air > 0.25) { pill.hidden = false; pill.className = 'cpill air'; pill.textContent = `AIR TIME · ${c.player.air.toFixed(1)} s`; }
     else pill.hidden = true;
     $('cBrake').classList.toggle('on', c.brake);
+    $('cWheel').lastChild.style.transform = `translateX(${(c.wheel * 54).toFixed(1)}px)`; // the gold marker slides L to R with the steering
     $('chase').querySelector('.steer.l').classList.toggle('on', c.steer < 0);
     $('chase').querySelector('.steer.r').classList.toggle('on', c.steer > 0);
     return onScreen;
   }
 
   function card(html) { $('chaseBody').innerHTML = html; $('chaseCard').hidden = !html; $('chase').classList.toggle('carded', !!html); }
-  const stageCard = (k) => card(`<p class="kicker">Stage ${k + 1} of 3 · ${STAGES[k].name}</p><h2>${['Leaving Pienza', 'The Siena road', 'Into Florence'][k]}</h2>
-    <p>${['Cypress avenues and gravel lanes under the town walls.', 'Open hills, farms and long straights: he is faster there, so take the bends well.', 'Vineyards and olive groves, then the dome in the valley ahead.'][k]} About a minute. Keep the black off-roader in sight.</p>
+  const stageCard = (k) => card(`<p class="kicker">Pienza to Florence · ${STAGES[k].name}</p><h2>${['Leaving Pienza', 'The Siena road', 'Into Florence'][k]}</h2>
+    <p>${['Cypress avenues and gravel lanes under the town walls.', 'Open hills, farms and long straights: he is faster there, so take the bends well.', 'Vineyards and olive groves, then the dome in the valley ahead.'][k]} About 45 seconds. Keep him in sight for ${WIN_SIGHT} seconds straight, or catch right up behind him, and the chase is yours.</p>
     <div class="route">${[0, 1, 2, 3].map((i) => `<i class="${i <= k ? 'on' : ''}"></i>`).join('<u></u>')}</div>
     <div class="rl"><span>Pienza</span><span>Siena road</span><span>Chianti</span><span>Florence</span></div>
     <button type="button" data-chase="go">Drive</button><button type="button" class="close" data-chase="skip">Skip to Florence</button>`);
@@ -133,7 +137,7 @@ export function makeChase({ renderer, onDone, toast }) {
   // Flow: the handler's call, then each stage card, driving, and the end cards.
   c.start = () => {
     document.body.classList.add('chasing'); $('chase').hidden = false; c.total = 0; c.closest = 1e9; c.lostCount = 0;
-    load(0); c.status = 'card';
+    c.seed = 1 + Math.floor(Math.random() * 1e6); load(0); c.status = 'card'; // a new road every run
     card(`<div class="gadget"><p class="kicker">Phone · Handler</p><p class="msg">A black off-roader just left Pienza with the ledger's buyer inside. He's heading for Florence.</p>
       <p class="msg">The little red car by the gate is yours. Keys are under the sun visor. <b>Don't lose sight of him.</b></p>
       <p class="small">Hold the left or right side of the screen to steer (or ← → / A D). The car drives itself forward; Brake is at the bottom (Space).</p>
@@ -149,11 +153,11 @@ export function makeChase({ renderer, onDone, toast }) {
     return false;
   };
   c.stop = () => { c.status = 'off'; card(''); $('chase').hidden = true; document.body.classList.remove('chasing'); $('locName').textContent = 'Piazza del Duomo'; };
-  function finishStage() {
-    if (c.stage < 2) { c.status = 'card'; card(`<p class="kicker">Stage ${c.stage + 1} of 3 done</p><h2>Still on his tail</h2><p>Gap ${Math.round(c.gap)} m. ${STAGES[c.stage + 1].name} next.</p><button type="button" data-chase="next">Next stage</button>`); return; }
+  function finishStage(why) {
+    if (c.stage < PLAY - 1) { c.status = 'card'; card(`<p class="kicker">Stage ${c.stage + 1} of 3 done</p><h2>Still on his tail</h2><p>Gap ${Math.round(c.gap)} m. ${STAGES[c.stage + 1].name} next.</p><button type="button" data-chase="next">Next stage</button>`); return; }
     c.status = 'done';
     const t = Math.round(c.total);
-    card(`<p class="kicker">Stage 3 of 3 · Florence</p><div class="stamp ok">IN SIGHT</div><h2>You followed him all the way</h2>
+    card(`<p class="kicker">Pienza to Florence</p><div class="stamp ok">${why === 'caught' ? 'CAUGHT UP' : 'IN SIGHT'}</div><h2>${{ caught: 'Right on his bumper', sight: 'He never left your sight' }[why] || 'You followed him all the way'}</h2>
       <p>The off-roader drops into the city and stops near the cathedral. Leave the car and follow on foot.</p>
       <p class="stat"><span>Time</span><b>${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}</b></p><p class="stat"><span>Closest gap</span><b>${Math.round(c.closest)} m</b></p><p class="stat"><span>Times out of sight</span><b>${c.lostCount}</b></p>
       <button type="button" data-chase="foot">Follow on foot</button>`);
@@ -173,29 +177,36 @@ export function makeChase({ renderer, onDone, toast }) {
     moveTraffic(c.traffic, c.road, dt, c.player);
     if (c.player.crashes !== c.crashes) { c.crashes = c.player.crashes; if (navigator.vibrate) navigator.vibrate(60); }
     fiat.userData.brake(c.brake);
+    c.wheel += (c.steer - c.wheel) * Math.min(1, dt * 12); // the steering slider at the bottom follows the steering
     place(); fitCam(false);
     c.closest = Math.min(c.closest, c.gap);
     const onScreen = hud(w, h);
     const seen = c.gap < 400 && onScreen && clearView(c.road, c.player.s - 9, camera.position.y, c.suv.s, c.suv.y + 1.6);
     const before = c.sight.losses;
-    if (sightStep(c.sight, seen, dt)) { c.status = 'lost'; card(`<p class="kicker">Stage ${c.stage + 1} of 3</p><h2>He's gone</h2><p>You lost sight of the off-roader for too long. Try the stage again.</p><button type="button" data-chase="retry">Retry stage</button><button type="button" class="close" data-chase="skip">Skip to Florence</button>`); }
+    if (sightStep(c.sight, seen, dt)) { c.status = 'lost'; card(`<p class="kicker">Pienza to Florence</p><h2>He's gone</h2><p>You lost sight of the off-roader for too long. Try again.</p><button type="button" data-chase="retry">Retry</button><button type="button" class="close" data-chase="skip">Skip to Florence</button>`); }
     if (c.sight.losses > before) c.lostCount++;
-    if (c.player.s >= c.road.end && c.status === 'driving') finishStage();
+    c.streak = seen ? c.streak + dt : 0;
+    if (c.status === 'driving') {
+      if (c.gap < CATCH_GAP) finishStage('caught');
+      else if (c.streak >= WIN_SIGHT) finishStage('sight');
+      else if (c.player.s >= c.road.end) finishStage('end');
+    }
   };
-  // Pausing shows the route north: three stages, you and him, Florence at the top.
+  // Pausing shows the route north: you and him on the way from Pienza to Florence at the top.
   c.pauseMap = (on) => {
     const m = $('pausedMap'); if (!on) { m.innerHTML = ''; return; }
     const pts = [[70, 250], [55, 175], [90, 105], [80, 30]], f = Math.min(1, c.player.s / c.road.end), g = Math.min(1, c.suv.s / c.road.end);
     const at = (k, t) => [pts[k][0] + (pts[k + 1][0] - pts[k][0]) * t, pts[k][1] + (pts[k + 1][1] - pts[k][1]) * t];
-    const [yx, yy] = at(c.stage, f), [hx, hy] = at(c.stage, g);
+    const along = (t) => { t = Math.min(3, (c.stage + t) * 3 / PLAY); const k = Math.min(2, Math.floor(t)); return at(k, t - k); }, reached = Math.floor((c.stage + f) * 3 / PLAY);
+    const [yx, yy] = along(f), [hx, hy] = along(g);
     m.innerHTML = `<svg viewBox="0 0 220 280" class="routemap" aria-label="Route map"><rect width="220" height="280" rx="12" fill="#e9dcbf"/>
       <path d="M0 22 C70 18 120 34 220 26" stroke="#8fb4c8" stroke-width="7" fill="none"/>
       <polyline points="${pts.map((p) => p.join(',')).join(' ')}" fill="none" stroke="#fffaf0" stroke-width="8" stroke-linecap="round"/>
-      <polyline points="${pts.slice(0, c.stage + 1).map((p) => p.join(',')).join(' ')} ${yx},${yy}" fill="none" stroke="#c9a24a" stroke-width="4" stroke-linecap="round"/>
-      ${pts.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="6" fill="${i <= c.stage ? '#c9a24a' : '#f4ecdc'}" stroke="#8a6d2c" stroke-width="2"/>`).join('')}
+      <polyline points="${pts.slice(0, reached + 1).map((p) => p.join(',')).join(' ')} ${yx},${yy}" fill="none" stroke="#c9a24a" stroke-width="4" stroke-linecap="round"/>
+      ${pts.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="6" fill="${i <= reached ? '#c9a24a' : '#f4ecdc'}" stroke="#8a6d2c" stroke-width="2"/>`).join('')}
       <rect x="${hx - 6}" y="${hy - 5}" width="12" height="10" rx="2" fill="#16181b"/><polygon points="${yx},${yy - 8} ${yx + 6},${yy + 6} ${yx},${yy + 2} ${yx - 6},${yy + 6}" fill="#2f6fd0" stroke="#fff" stroke-width="1.2"/>
       <g font-family="Georgia,serif" font-size="12" fill="#262019"><text x="96" y="34">Florence</text><text x="84" y="254">Pienza</text><text x="104" y="109" font-size="10" font-style="italic" fill="#6b5f4c">Chianti</text><text x="72" y="179" font-size="10" font-style="italic" fill="#6b5f4c">Siena road</text></g>
-      <text x="12" y="272" font-size="10" fill="#5c5040" font-family="Helvetica">Stage ${c.stage + 1} of 3 · about a minute each</text></svg>`;
+      <text x="12" y="272" font-size="10" fill="#5c5040" font-family="Helvetica">About 45 seconds · a new road every run</text></svg>`;
   };
   c.render = () => { renderer.render(scene, camera); };
   c.resize = (w, h) => { camera.aspect = w / h; camera.fov = w < h ? 64 : 50; camera.updateProjectionMatrix(); };
@@ -216,5 +227,6 @@ export function makeChase({ renderer, onDone, toast }) {
   addEventListener('blur', () => { input.keys = { left: false, right: false, brake: false }; pointers.clear(); zones(); });
   document.addEventListener('click', (e) => { const b = e.target.closest('button[data-chase]'); if (b) c.action(b.dataset.chase); });
   c.input = input; c.toast = toast;
+  c.fiat = fiat; // for tests
   return c;
 }

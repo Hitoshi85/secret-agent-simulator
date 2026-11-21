@@ -8,11 +8,11 @@ import { rnd, reseed } from '../world/rand.js';
 
 export const STEP = 2; // metres between road samples
 export const STAGES = [
-  { name: "Val d'Orcia", place: 'Strada dei cipressi', seed: 11, amp: 1, town: 'pienza', fields: ['#d8b860', '#c9a94f', '#9fae5a', '#86a04c', '#b7b26b', '#b98d5c', '#e1cd8c', '#a5a35f'] },
+  { name: "Val d'Orcia", place: 'Strada dei cipressi', seed: 11, len: 1500, amp: 1, town: 'pienza', fields: ['#d8b860', '#c9a94f', '#9fae5a', '#86a04c', '#b7b26b', '#b98d5c', '#e1cd8c', '#a5a35f'] },
   { name: 'Siena road', place: 'Strada per Siena', seed: 23, amp: 0.8, town: null, fields: ['#c9a94f', '#a9b562', '#8fa456', '#d8b860', '#b98d5c', '#9a9a5c', '#cdbf7a'] },
   { name: 'Chianti hills', place: 'Colline del Chianti', seed: 37, amp: 1.25, town: 'florence', vines: true, fields: ['#7f9a48', '#93a854', '#6f8c42', '#a7a35f', '#b98d5c', '#8a9a50'] },
 ];
-const LEN = 2100; // road length per stage: about a minute at chase speed
+const DEFAULT_LEN = 2100; // road length of a full stage: about a minute at chase speed (a stage can set a shorter `len`)
 
 function baseH(st, x, z) {
   const a = st.amp;
@@ -22,6 +22,7 @@ function baseH(st, x, z) {
 // The road: centre line samples with height, heading, curvature, and whether cypresses line it.
 function makeRoad(st) {
   reseed(st.seed);
+  const LEN = st.len || DEFAULT_LEN;
   const pts = [new THREE.Vector3(0, 0, 0)];
   let x = 0;
   for (let k = 1; k <= 15; k++) { if (!(st.town === 'florence' && k >= 13)) x = x * 0.4 + (rnd() - 0.5) * 140; pts.push(new THREE.Vector3(x, 0, -k * 150)); } // Florence: a straight run at the end, the city ahead
@@ -91,9 +92,9 @@ function ground(st, road) {
   // far hills: a coarse grid, sunk under the strip near the road
   const xs = [], zs = [];
   for (let x = -1400; x <= 1400; x += 40) xs.push(x);
-  for (let z = 600; z >= -LEN - 1600; z -= 40) zs.push(z);
+  for (let z = 600; z >= -road.end - 1600; z -= 40) zs.push(z);
   const nearest = (x, z) => { let b = 1e18; for (let i = 0; i < road.n; i += 10) { const d = (road.x[i] - x) ** 2 + (road.z[i] - z) ** 2; if (d < b) b = d; } return Math.sqrt(b); };
-  const gh = zs.map((z) => xs.map((x) => { const d = nearest(x, z); return baseH(st, x, z) + Math.max(0, Math.hypot(x, z + LEN / 2) - 1300) * 0.12 - (d < 280 ? 6 : 0); }));
+  const gh = zs.map((z) => xs.map((x) => { const d = nearest(x, z); return baseH(st, x, z) + Math.max(0, Math.hypot(x, z + road.end / 2) - 1300) * 0.12 - (d < 280 ? 6 : 0); }));
   for (let r = 0; r < zs.length - 1; r++) for (let q = 0; q < xs.length - 1; q++) {
     const A = [xs[q], gh[r][q], zs[r]], B = [xs[q + 1], gh[r][q + 1], zs[r]], C = [xs[q], gh[r + 1][q], zs[r + 1]], D = [xs[q + 1], gh[r + 1][q + 1], zs[r + 1]];
     c.set(fieldCol(st, A[0], A[2])); c.multiplyScalar(0.95 + rnd() * 0.08); const hex = '#' + c.getHexString();
@@ -178,8 +179,9 @@ function trees(st, road, H) {
 }
 
 // Builds one stage: returns the group to add to the scene and the road the cars drive on.
-export function buildStage(k) {
-  const st = STAGES[k], road = makeRoad(st), group = new THREE.Group();
+// seed: a fresh number gives a new road (bends, hills, crests, cypress runs, fields); left out, the stage's own.
+export function buildStage(k, seed) {
+  const st = seed === undefined ? STAGES[k] : { ...STAGES[k], seed }, road = makeRoad(st), group = new THREE.Group();
   // ground height anywhere: the road near it, the hills beyond (used to place trees and buildings)
   let hint = 0;
   const H = (x, z) => {

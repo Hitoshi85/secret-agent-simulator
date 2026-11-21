@@ -53,7 +53,7 @@ test('three stages and the cars build, and a chase view stays within the phone b
   console.log(JSON.stringify(r));
   for (const [k, n] of Object.entries(r.meshes)) expect(n, `${k}: one mesh per material`).toBeLessThanOrEqual(18);
   for (const s of r.stages) {
-    expect(s.end).toBe(2100);
+    expect(s.end).toBe(s === r.stages[0] ? 1500 : 2100); // the chase drives the first stage, about 45 s
     expect(s.len, 'the road runs on past the finish').toBeGreaterThan(s.end + 100);
     expect(s.crests, 'crests for air time').toBeGreaterThanOrEqual(2);
     expect(s.cypressMetres, 'cypress avenues').toBeGreaterThan(400);
