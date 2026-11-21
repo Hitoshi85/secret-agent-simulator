@@ -60,6 +60,7 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 | W14 | Use several focused subagents in parallel for independent parts of a task only when it pays off, keeping token use balanced. | Preference |
 | W15 | Show results (e.g. test runs) in simple tables when asked. | Preference |
 | W16 | Every update says what the work is waiting on: Hitoshi, Claude or GitHub (Hitoshi's rule, 2026-11-16). Options always come as selectable cards. | In place |
+| W17 | Fast CI: the Playwright tests run in 3 parallel shards on PRs and before each deploy; changes to README.md alone skip the browser tests (lint and the requirements check still run); main's comparison screenshots run beside the tests. The required check stays **Lint and smoke test** (Hitoshi's choices, 2026-11-21). | In place (#41) |
 
 ## 2. Shipped changes
 
@@ -74,7 +75,6 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 
 | Date | Feedback / request from Hitoshi | Outcome |
 |---|---|---|
-| 2026-11-15 | "Keep cases as separate code so it's easy to swap/edit cases." | Each case is a data file in `src/cases/`, run by the engine in `src/case/` (R18), #6. |
 | 2026-11-15 | Case mockup (five phone screens): "Build it as shown". | Saved as docs/mockups/case-01-dossier.png and built in #6. |
 | 2026-11-16 | The README bot PRs got stuck behind GitHub's approval for runs from the bot and blocked the queue. Chose "Queue approves its own". | The merge queue approves the held CI run only on `bot/play-links` README-only PRs, and skips a PR it cannot merge instead of stopping; #10. |
 | 2026-11-16 | Played The Dossier: "feels slow with a lot of aimless walking"; wants running, a hint or direction to witnesses and objects, and a map of the game world; open to other ideas. Cards: "Double-tap to run", "Edge arrows with distance", "Corner minimap plus big map", "Handler's first lead". | Built in #12 (R6, R9, R19), issue #11. |
@@ -94,6 +94,7 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 | 2026-11-21 | "Shorter car chase (1/4 of the length)", "Move on if user keeps the car in sight for a distance or actually catches up", "Different route each time". Cards: 30 s in sight in a row, or catching right up; random roads every run. | R21: one drive of about 45 s (1.5 km) out of Pienza, a new road and traffic every run, won early by 30 s in sight or catching up. PR #34. |
 | 2026-11-21 | "Less speed penalty for being off road", "Show wheel direction because physics don't seem to line up", then "a different indicator of wheel direction on bottom of screen" and mockups of each. Cards: light slowdown; steering indicator (slider bar centred at the bottom, Brake at the bottom right; docs/mockups/chase-steer.jpg). | R21: off the road tops out near 115 km/h (was 61); a steering slider centred at the bottom and Brake moved to the bottom right. The heading was checked and matches the steering (a test now checks it). PR #34. |
 | 2026-11-21 | Reviewed the agentic AI analysis of the repo; chose "Yes, build it now" for "Feedback button sends session context", then "Summary + last 10 events". | R22, issue #37: in-memory event log and session context in the Feedback issue. PR #40. |
+| 2026-11-21 | "To make GitHub deploy faster, is there anything that I need to change?" Chose "Do both fixes"; cards: 3 parallel jobs; split the deploy's tests too; main's comparison screenshots alongside; README.md only skips the browser tests. | W17: tests in 3 shards on PRs and deploys, README-only changes get lint only, the required check sums up the shards. PR #41. |
 
 ## 4. Open backlog
 
