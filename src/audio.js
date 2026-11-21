@@ -1,72 +1,105 @@
 // All the game's sound, made in code with Web Audio (no audio files): the red car's engine note
 // following its speed and gears, road and gravel under the tyres, the brake squeal, thumps on landing
 // after a crest and on crashes, footsteps on stone, a short tension sting when Heat rises, and UI ticks.
-// Mood: "Tuscan Noir" (Hitoshi's pick): plucked strings and a low bowed drone, wooden ticks; a quiet
-// bed of it plays on the title, the case file and the chase cards, never while driving or walking.
+// Three styles to pick from by ear, ?variant=a|b|c (see CAR_VARIANTS and the bed below), all quiet: a quiet
+// bed plays on the title, the case file and the chase cards, never while driving or walking.
 // Nothing starts before the first tap or key (phone autoplay rules), and it stays silent and harmless
 // when Web Audio is missing. Mute lives on the pause screen and is remembered on the phone.
 // Budget: live nodes are counted, and a one-shot that would go over MAX_NODES is skipped.
 
-export const MAX_NODES = 64;
+export const MAX_NODES = 96;
 const KEY = 'sas-muted';
-const BED = [45, 52, 57, 60, 59, 52, 57, 64, 62, 53, 57, 60, 59, 52, 56, 59]; // the bed's arpeggio (MIDI notes), an original figure
-const STEP = 60 / 84 / 2; // eighth notes at 84 bpm
 const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
-const GEARS = [0, 9, 17, 25, 33, 45]; // m/s where each gear ends: a small four-cylinder's shifts
+// The red car: a small four-cylinder, five gears. rpm = speed (m/s) x ratio; it shifts up near the
+// redline and down when the revs sag. A four-stroke four fires twice a revolution: firing Hz = rpm / 30.
+const RATIO = [0, 260, 165, 120, 95, 78], IDLE = 850, SHIFT_UP = 6300, SHIFT_DOWN = 2600;
+// Car sound variants to pick from by ear (?variant=a|b|c; a is the default).
+export const CAR_VARIANTS = {
+  a: { name: 'Petrol, outside', gain: 0.2, tone: 1, grit: 2, cabin: 0, pops: false, wind: 1 },
+  b: { name: 'From the cabin', gain: 0.24, tone: 0.55, grit: 1.2, cabin: 750, pops: false, wind: 0.6 },
+  c: { name: 'Raspy, with pops', gain: 0.2, tone: 1.35, grit: 5, cabin: 0, pops: true, wind: 1 },
+};
+const pickVariant = () => { try { const v = new URL(location.href).searchParams.get('variant'); return CAR_VARIANTS[v] ? v : 'a'; } catch { return 'a'; } };
 
 const store = { get() { try { return localStorage.getItem(KEY) === '1'; } catch { return false; } }, set(v) { try { localStorage.setItem(KEY, v ? '1' : '0'); } catch { /* private mode */ } } };
 
 export function makeAudio() {
   const AC = window.AudioContext || window.webkitAudioContext;
   const stats = { state: 'off', nodes: 0, peak: 0, skipped: 0, engineHz: 0, squeal: 0, rumble: 0, played: { step: 0, land: 0, crash: 0, sting: 0, tick: 0 } };
-  const a = { stats, muted: store.get(), ctx: null };
-  let bed = null, notes = null, master = null, eng = null, noise = null, plucks = null, paused = false, lastCrashes = 0, lastWalked = 0;
+  const a = { stats, muted: store.get(), ctx: null, variant: pickVariant() };
+  const V = CAR_VARIANTS[a.variant];
+  let bed = null, master = null, eng = null, rpm = IDLE, gear = 1, cut = 0, popT = 0, noise = null, paused = false, lastCrashes = 0, lastWalked = 0;
 
   const live = (k) => { stats.nodes += k; stats.peak = Math.max(stats.peak, stats.nodes); };
 
   function build() {
     if (a.ctx || !AC) return;
     const ctx = a.ctx = new AC();
-    // One noise buffer and two plucked-string notes, made once.
+    // One noise buffer, made once.
     noise = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     { const d = noise.getChannelData(0); let s = 7; for (let i = 0; i < d.length; i++) { s = (s * 16807) % 2147483647; d[i] = s / 1073741823.5 - 1; } }
-    plucks = [41.2, 82.4].map((f) => pluckBuffer(ctx, f));
     const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4; comp.connect(ctx.destination);
-    master = ctx.createGain(); master.gain.value = 0.8; master.connect(comp);
+    master = ctx.createGain(); master.gain.value = 0.5; // quiet overall (Hitoshi: tone it all down) master.connect(comp);
     live(3); // compressor, master, destination
     ctx.onstatechange = () => { stats.state = ctx.state; };
     stats.state = ctx.state;
   }
 
-  // The car, built when a drive starts and stopped when it ends (nothing runs on foot): a buzzy saw
-  // and a square an octave down through a filter that opens with speed, and looped noise under the
-  // tyres, low for road and gravel and a narrow band for the brake squeal.
-  function startCar() {
-    const ctx = a.ctx, bus = ctx.createGain(); bus.gain.value = 0; bus.connect(master);
-    const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
-    o1.type = 'sawtooth'; o2.type = 'square'; o2.detune.value = -8; f.type = 'lowpass'; f.Q.value = 2; g.gain.value = 0.12;
-    o1.connect(f); o2.connect(f); f.connect(g); g.connect(bus);
-    const n = ctx.createBufferSource(); n.buffer = noise; n.loop = true;
-    const rf = ctx.createBiquadFilter(), rg = ctx.createGain(), sf = ctx.createBiquadFilter(), sg = ctx.createGain();
-    rf.type = 'lowpass'; rf.frequency.value = 320; rg.gain.value = 0; sf.type = 'bandpass'; sf.frequency.value = 2700; sf.Q.value = 9; sg.gain.value = 0;
-    n.connect(rf); rf.connect(rg); rg.connect(bus); n.connect(sf); sf.connect(sg); sg.connect(bus);
-    o1.start(); o2.start(); n.start(); live(12);
-    eng = { bus, o1, o2, n, f, g, rg, sg };
+  // The car, built when a drive starts and stopped when it ends (nothing runs on foot). The engine is a
+  // harmonic-rich firing tone plus combustion noise pulsed at the firing rate, through exhaust
+  // resonances and a little saturation; under it, tyre roar, wind, gravel and tyre scrub from one
+  // looped noise. Variant b hears it all through the cabin (a low-pass), c is raspier and pops on lift-off.
+  function engineWave(ctx) {
+    const n = 40, re = new Float32Array(n), im = new Float32Array(n);
+    for (let k = 1; k < n; k++) im[k] = Math.pow(k, -0.75 / V.tone) * (k % 2 ? 1 : 0.7) * (1 + 0.25 * Math.sin(k * 2.3));
+    return ctx.createPeriodicWave(re, im);
   }
+  function shaper(ctx, amt) {
+    const c = new Float32Array(1024); for (let i = 0; i < 1024; i++) { const x = i / 511.5 - 1; c[i] = Math.tanh(x * amt) / Math.tanh(amt); }
+    const w = ctx.createWaveShaper(); w.curve = c; w.oversample = 'none'; return w;
+  }
+  function startCar() {
+    const ctx = a.ctx, bus = ctx.createGain(); bus.gain.value = 0;
+    const cab = ctx.createBiquadFilter(); cab.type = 'lowpass'; cab.frequency.value = V.cabin || 16000; cab.Q.value = 0.5;
+    bus.connect(cab); cab.connect(master);
+    const wave = engineWave(ctx);
+    const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), g2 = ctx.createGain(); o1.setPeriodicWave(wave); o2.setPeriodicWave(wave); g2.gain.value = 0.35; // o2: half order, the uneven lope
+    const n = ctx.createBufferSource(); n.buffer = noise; n.loop = true;
+    const cf = ctx.createBiquadFilter(), am = ctx.createGain(), amOsc = ctx.createOscillator(), amDepth = ctx.createGain();
+    cf.type = 'bandpass'; cf.frequency.value = 900; cf.Q.value = 0.8; am.gain.value = 0.15; amOsc.type = 'sawtooth'; amDepth.gain.value = 0.15;
+    amOsc.connect(amDepth); amDepth.connect(am.gain); n.connect(cf); cf.connect(am); // combustion noise, pulsed with each firing
+    const mix = ctx.createGain(), ex1 = ctx.createBiquadFilter(), ex2 = ctx.createBiquadFilter(), sat = shaper(ctx, V.grit), lp = ctx.createBiquadFilter(), g = ctx.createGain();
+    ex1.type = 'peaking'; ex1.frequency.value = 140; ex1.Q.value = 1.2; ex1.gain.value = 6; ex2.type = 'peaking'; ex2.frequency.value = 620; ex2.Q.value = 2; ex2.gain.value = 5;
+    lp.type = 'lowpass'; lp.Q.value = 0.7; g.gain.value = 0;
+    o1.connect(mix); o2.connect(g2); g2.connect(mix); am.connect(mix); mix.connect(ex1); ex1.connect(ex2); ex2.connect(sat); sat.connect(lp); lp.connect(g); g.connect(bus);
+    const roar = ctx.createBiquadFilter(), rg = ctx.createGain(), wind = ctx.createBiquadFilter(), wg = ctx.createGain(), grav = ctx.createBiquadFilter(), gg = ctx.createGain(), scrub = ctx.createBiquadFilter(), sg = ctx.createGain();
+    roar.type = 'lowpass'; roar.frequency.value = 450; rg.gain.value = 0; wind.type = 'bandpass'; wind.frequency.value = 1100; wind.Q.value = 0.4; wg.gain.value = 0;
+    grav.type = 'bandpass'; grav.frequency.value = 2200; grav.Q.value = 0.6; gg.gain.value = 0; scrub.type = 'bandpass'; scrub.frequency.value = 1300; scrub.Q.value = 1.5; sg.gain.value = 0;
+    for (const [f, gn] of [[roar, rg], [wind, wg], [grav, gg], [scrub, sg]]) { n.connect(f); f.connect(gn); gn.connect(bus); }
+    o1.start(); o2.start(); amOsc.start(); n.start(); live(CAR_NODES);
+    eng = { bus, o1, o2, amOsc, n, lp, g, cf, rg, wg, gg, sg };
+    rpm = IDLE; gear = 1; cut = 0;
+  }
+  const CAR_NODES = 29;
   function stopCar() {
     const e = eng, t = a.ctx.currentTime; eng = null; stats.squeal = stats.rumble = 0;
     e.bus.gain.setTargetAtTime(0, t, 0.1);
-    for (const o of [e.o1, e.o2, e.n]) o.stop(t + 0.5);
-    e.o1.onended = () => { e.bus.disconnect(); live(-12); };
+    for (const o of [e.o1, e.o2, e.amOsc, e.n]) o.stop(t + 0.5);
+    e.o1.onended = () => { e.bus.disconnect(); live(-CAR_NODES); };
   }
-
-  // Karplus-Strong plucked string, computed into a buffer once.
-  function pluckBuffer(ctx, f) {
-    const n = Math.ceil(ctx.sampleRate * 1.6), b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
-    const p = Math.round(ctx.sampleRate / f), line = new Float32Array(p); let s = 11;
-    for (let i = 0; i < p; i++) { s = (s * 16807) % 2147483647; line[i] = s / 1073741823.5 - 1; }
-    for (let i = 0, idx = 0; i < n; i++, idx = (idx + 1) % p) { const cur = line[idx]; line[idx] = 0.996 * (0.9 * cur + 0.05 * (cur + line[(idx + 1) % p])); d[i] = cur; }
-    return b;
+  // Revs from speed and gear; throttle 1 when driving on, 0 when braking or flying (wheels spin up).
+  function setEngine(v, t, dt, throttle, flying) {
+    const want = flying ? Math.min(7000, rpm + 2500 * dt * 4) : Math.max(IDLE, v * RATIO[gear]);
+    if (!flying && want > SHIFT_UP && gear < 5) { gear++; cut = 0.16; } // shift up: a short lift as the clutch goes in
+    else if (!flying && want < SHIFT_DOWN && gear > 1) gear--;
+    rpm += ((flying ? want : Math.max(IDLE, v * RATIO[gear])) - rpm) * Math.min(1, dt * (cut > 0 ? 4 : 12));
+    cut = Math.max(0, cut - dt);
+    const load = cut > 0 ? 0.1 : throttle, hz = rpm / 30, k = (rpm - IDLE) / (7000 - IDLE);
+    stats.engineHz = hz; stats.rpm = Math.round(rpm); stats.gear = gear;
+    eng.o1.frequency.setTargetAtTime(hz, t, 0.03); eng.o2.frequency.setTargetAtTime(hz / 2, t, 0.03); eng.amOsc.frequency.setTargetAtTime(hz, t, 0.03);
+    eng.cf.frequency.setTargetAtTime(600 + 1800 * k, t, 0.05);
+    eng.lp.frequency.setTargetAtTime((350 + 2600 * k * (0.45 + 0.55 * load)) * V.tone, t, 0.05);
+    eng.g.gain.setTargetAtTime(V.gain * (0.45 + 0.35 * k) * (0.55 + 0.45 * load), t, 0.05);
   }
 
   // One-shot voices: each counts its nodes until its source ends, and is skipped over the budget.
@@ -91,32 +124,88 @@ export function makeAudio() {
     env(g, t + delay, att, peak, dec); o.connect(g); g.connect(out); o.start(t + delay); o.stop(t + delay + att + dec + 0.05); done(o, 2);
     return true;
   }
-  function pluck(out, k, peak, delay = 0) { // 2 nodes
-    const t = voice(2); if (t === null) return false;
-    const s = a.ctx.createBufferSource(), g = a.ctx.createGain(); s.buffer = plucks[k]; g.gain.value = peak;
-    s.connect(g); g.connect(out); s.start(t + delay); done(s, 2); return true;
+
+
+  // Struck sounds, computed once into buffers and cached: a soft felt piano note (slightly inharmonic
+  // partials, each fading at its own rate, a touch of hammer) and a distant church bell.
+  const cache = {};
+  function piano(m) {
+    const key = 'p' + m; if (cache[key]) return cache[key];
+    const ctx = a.ctx, sr = ctx.sampleRate, len = Math.ceil(sr * 2.5), b = ctx.createBuffer(1, len, sr), d = b.getChannelData(0), f = mtof(m);
+    for (let n = 1; n <= 10; n++) {
+      const fn = f * n * Math.sqrt(1 + 0.0004 * n * n); if (fn > sr / 2.5) break;
+      const amp = Math.pow(n, -1.3) * (m > 72 ? Math.pow(0.7, n) : 1), d1 = 1.2 + 0.9 * n + f / 300, w = 2 * Math.PI * fn / sr;
+      for (let i = 0; i < len; i++) { const t = i / sr; d[i] += amp * Math.sin(w * i) * (0.7 * Math.exp(-t * d1) + 0.3 * Math.exp(-t * 0.6)); }
+    }
+    let s = 3; for (let i = 0; i < sr * 0.006; i++) { s = (s * 16807) % 2147483647; d[i] += (s / 1073741823.5 - 1) * 0.08 * (1 - i / (sr * 0.006)); }
+    for (let i = 0; i < 200; i++) d[i] *= i / 200;
+    return (cache[key] = b);
+  }
+  function bell(f) {
+    const key = 'b' + f; if (cache[key]) return cache[key];
+    const ctx = a.ctx, sr = ctx.sampleRate, len = Math.ceil(sr * 6), b = ctx.createBuffer(1, len, sr), d = b.getChannelData(0);
+    for (const [r, amp, dec] of [[0.5, 0.5, 0.35], [1, 1, 0.6], [1.19, 0.6, 0.8], [1.5, 0.45, 0.9], [2, 0.35, 1.2], [2.52, 0.25, 1.6], [3.01, 0.15, 2.2]]) {
+      const w = 2 * Math.PI * f * r / sr; for (let i = 0; i < len; i++) d[i] += amp * Math.sin(w * i) * Math.exp(-(i / sr) * dec);
+    }
+    for (let i = 0; i < 400; i++) d[i] *= i / 400;
+    return (cache[key] = b);
+  }
+  function play(buf, out, at, peak, len) { // 2 nodes
+    const st = voice(2); if (st === null) return false;
+    const s = a.ctx.createBufferSource(), g = a.ctx.createGain(); at = Math.max(at, st);
+    s.buffer = buf; g.gain.setValueAtTime(peak, at); if (len) g.gain.setTargetAtTime(0.0001, at + len, 0.15);
+    s.connect(g); g.connect(out); s.start(at); s.stop(at + (len ? len + 0.8 : buf.duration)); done(s, 2); return true;
   }
 
-
-  // The quiet bed: a drone and an echoing plucked arpeggio, started when a card shows, stopped when
-  // it goes, and scheduled a little ahead from each frame.
+  // The quiet bed on the title, the case file and the chase cards, one style per variant:
+  //   a "Florence air": soft city air and, now and then, a church bell far away;
+  //   b "Slow piano jazz": a slow, swung, original turnaround on felt piano with a walking bass;
+  //   c "Warm pad": a slow, soft chord pad breathing through a moving filter.
+  // Scheduled a little ahead from each frame; its sources stop when the cards close.
+  const JAZZ = [ // bars of [bass, chord voicing] in F: Fmaj9, D7b9, Gm9, C13, Am7, D7, Gm9, C7sus (original voicings)
+    [41, [57, 60, 64, 67]], [38, [54, 60, 63, 66]], [43, [58, 62, 65, 69]], [36, [58, 62, 64, 69]],
+    [45, [55, 60, 64, 67]], [38, [54, 57, 60, 64]], [43, [58, 62, 65, 69]], [36, [58, 60, 65, 67]]];
+  const SCALE = [65, 67, 69, 72, 74, 77, 79]; // melody notes, F major pentatonic plus G
+  const BAR = 4 * 60 / 62; // 62 bpm
   function startBed() {
-    const ctx = a.ctx, out = ctx.createGain(), dl = ctx.createDelay(1), lp = ctx.createBiquadFilter(), fb = ctx.createGain(), wet = ctx.createGain();
-    out.gain.value = 0; out.connect(master); dl.delayTime.value = 0.36; lp.frequency.value = 2500; fb.gain.value = 0.3; wet.gain.value = 0.35;
-    dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(wet); wet.connect(out);
-    const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), lfo = ctx.createOscillator(), lg = ctx.createGain(), df = ctx.createBiquadFilter(), dg = ctx.createGain();
-    o1.type = o2.type = 'sawtooth'; o1.frequency.value = mtof(33); o2.frequency.value = mtof(45); lfo.frequency.value = 5; lg.gain.value = 3; df.frequency.value = 500; dg.gain.value = 0.035;
-    lfo.connect(lg); lg.connect(o1.detune); lg.connect(o2.detune); o1.connect(df); o2.connect(df); df.connect(dg); dg.connect(out);
-    o1.start(); o2.start(); lfo.start(); live(11);
-    if (!notes) { notes = {}; for (const m of new Set(BED)) notes[m] = pluckBuffer(a.ctx, mtof(m)); }
-    const t = ctx.currentTime; out.gain.setTargetAtTime(0.5, t, 0.6);
-    bed = { out, dl, oscs: [o1, o2, lfo], i: bed ? bed.i : 0, next: t + 0.05 };
+    const ctx = a.ctx, out = ctx.createGain(), t = ctx.currentTime; out.gain.value = 0; out.connect(master);
+    out.gain.setTargetAtTime(1, t, 0.8);
+    const nodes = [out], srcs = [];
+    if (a.variant === 'a') { // air: looped noise, very low and dark
+      const n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(); n.buffer = noise; n.loop = true; f.type = 'lowpass'; f.frequency.value = 380; g.gain.value = 0.05;
+      n.connect(f); f.connect(g); g.connect(out); n.start(); nodes.push(f, g); srcs.push(n);
+    } else if (a.variant === 'c') { // pad: detuned triangles on F, C, A, E through a slowly opening filter
+      const f = ctx.createBiquadFilter(), lfo = ctx.createOscillator(), lg = ctx.createGain(), g = ctx.createGain();
+      f.type = 'lowpass'; f.frequency.value = 600; f.Q.value = 0.7; lfo.frequency.value = 0.07; lg.gain.value = 350; g.gain.value = 0.035;
+      lfo.connect(lg); lg.connect(f.frequency); f.connect(g); g.connect(out); lfo.start(); nodes.push(f, lg, g); srcs.push(lfo);
+      for (const [m, dt] of [[41, -6], [48, 5], [57, -4], [64, 7]]) { const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = mtof(m); o.detune.value = dt; o.connect(f); o.start(); srcs.push(o); }
+    }
+    live(nodes.length + srcs.length);
+    bed = { out, nodes, srcs, next: t + 0.1, bar: bed ? bed.bar : 0, bellAt: t + 1.5 };
   }
   function stopBed() {
-    const b = bed, t = a.ctx.currentTime; bed = { i: b.i, off: true };
-    b.out.gain.setTargetAtTime(0, t, 0.15);
-    for (const o of b.oscs) o.stop(t + 0.8);
-    b.oscs[0].onended = () => { b.out.disconnect(); live(-11); };
+    const b = bed, t = a.ctx.currentTime; bed = { bar: b.bar, off: true };
+    b.out.gain.setTargetAtTime(0, t, 0.25);
+    const k = b.nodes.length + b.srcs.length;
+    setTimeout(() => { for (const s of b.srcs) try { s.stop(); } catch { /* already stopped */ } b.out.disconnect(); live(-k); }, 1500);
+  }
+  function scheduleBed(t) {
+    if (a.variant === 'a') { // a bell every 9 to 15 s
+      if (bed.bellAt < t + 0.2) { play(bell(bed.bar % 3 ? 196 : 174.6), bed.out, bed.bellAt, 0.05); bed.bar++; bed.bellAt += 9 + Math.random() * 6; }
+      return;
+    }
+    if (a.variant !== 'b') return;
+    while (bed.next < t + 0.3) { // one bar of jazz: rolled chord, bass on 1 and 3 (a walk-up on 4), a few melody notes, swung
+      const at = bed.next, [bass, chord] = JAZZ[bed.bar % JAZZ.length], nextBass = JAZZ[(bed.bar + 1) % JAZZ.length][0], beat = BAR / 4;
+      chord.forEach((m, i) => play(piano(m), bed.out, at + i * 0.03, 0.05, BAR * 0.9));
+      play(piano(bass), bed.out, at, 0.09, beat * 1.8); play(piano(bass + 7), bed.out, at + 2 * beat, 0.06, beat * 1.5);
+      play(piano(nextBass + (nextBass > bass ? -1 : 1)), bed.out, at + 3 * beat, 0.06, beat * 0.9);
+      if (bed.bar % 2 === 0) for (let k = 0, x = Math.floor(Math.random() * 4); k < 3; k++) {
+        x = Math.max(0, Math.min(SCALE.length - 1, x + (Math.random() < 0.5 ? -1 : 1)));
+        play(piano(SCALE[x]), bed.out, at + beat * (1 + k * 0.66 + (k % 2 ? 0.12 : 0)), 0.045, beat * 1.2);
+      }
+      bed.bar++; bed.next += BAR;
+    }
   }
   a.bed = (on) => {
     if (!a.ctx || a.muted || a.ctx.state !== 'running') return;
@@ -126,16 +215,9 @@ export function makeAudio() {
     if (!on) return;
     const t = a.ctx.currentTime;
     if (bed.next < t) bed.next = t + 0.05; // after a long frame (loading the chase), skip the missed notes instead of catching up
-    while (bed.next < t + 0.2) { // a pluck every eighth note, accent on each beat, some go through the echo
-      const st = voice(2); if (st === null) { bed.next += STEP; continue; }
-      const s = a.ctx.createBufferSource(), g = a.ctx.createGain(), at = Math.max(bed.next, st);
-      s.buffer = notes[BED[bed.i % BED.length]]; g.gain.setValueAtTime(bed.i % 4 ? 0.18 : 0.3, at); g.gain.setTargetAtTime(0.0001, at + 1.1, 0.1);
-      s.connect(g); g.connect(bed.out); g.connect(bed.dl); s.start(at); s.stop(at + 1.5); done(s, 2);
-      bed.i++; bed.next += STEP;
-    }
+    scheduleBed(t);
   };
 
-  // The first tap or key anywhere starts sound (when not muted).
   // iPhone: Web Audio is muted by the silent switch unless the page asks to play like media. Safari
   // 16.4+ has navigator.audioSession; older iOS needs a silent HTML <audio> playing alongside.
   let media = null;
@@ -175,57 +257,55 @@ export function makeAudio() {
     if (eng) eng.bus.gain.setTargetAtTime(0, a.ctx.currentTime, 0.05);
   };
 
-  // Each frame of the chase (null when not driving): engine, tyres, brake, landings and crashes.
+  // Each frame of the chase (null when not driving): engine, tyres, wind, landings and crashes.
+  let lastT = 0;
   a.chase = (c) => {
     if (!a.ctx || a.muted) return;
     const t = a.ctx.currentTime, p = c && c.status === 'driving' && !paused ? c.player : null;
     const count = c && c.status === 'count'; // engine idling through 3-2-1
+    const dt = Math.min(0.1, Math.max(1 / 120, t - lastT || 1 / 60)); lastT = t;
     if (!p && !count) { if (eng) stopCar(); return; }
     if (!eng) startCar();
     eng.bus.gain.setTargetAtTime(1, t, 0.08);
-    if (!p) { setEngine(0, t); eng.rg.gain.setTargetAtTime(0, t, 0.05); eng.sg.gain.setTargetAtTime(0, t, 0.03); stats.squeal = stats.rumble = 0; return; }
-    setEngine(p.v, t, c.brake, p.air > 0.05);
-    const off = Math.abs(p.d) > 3.6, v = Math.min(1, p.v / 35);
-    stats.rumble = p.air > 0.05 ? 0 : (off ? 0.35 : 0.06) * v;
-    stats.squeal = c.brake && p.v > 6 && p.air <= 0.05 ? 0.06 + 0.06 * v : 0;
-    eng.rg.gain.setTargetAtTime(stats.rumble, t, 0.06);
+    if (!p) { setEngine(0, t, dt, 0.2, false); for (const gn of [eng.rg, eng.wg, eng.gg, eng.sg]) gn.gain.setTargetAtTime(0, t, 0.05); stats.squeal = stats.rumble = 0; return; }
+    const flying = p.air > 0.05, off = Math.abs(p.d) > 3.6, v = Math.min(1, p.v / 39);
+    setEngine(p.v, t, dt, c.brake ? 0 : 1, flying);
+    stats.rumble = flying ? 0 : (off ? 0.12 : 0.07) * (0.2 + v);
+    stats.squeal = c.brake && p.v > 8 && !flying ? 0.04 + 0.05 * v : 0; // tyre scrub under hard braking, not a squeal
+    eng.rg.gain.setTargetAtTime(stats.rumble, t, 0.08);
+    eng.wg.gain.setTargetAtTime(0.06 * V.wind * v * v, t, 0.2);
+    eng.gg.gain.setTargetAtTime(off && !flying ? 0.08 + 0.1 * v : 0, t, 0.05);
     eng.sg.gain.setTargetAtTime(stats.squeal, t, 0.04);
+    if (off && !flying && Math.random() < dt * 25 * v) hit(master, 'bandpass', 2500 + Math.random() * 2000, 4, 0.001, 0.02, 0.06 + 0.08 * Math.random()); // stones on the sills
+    if (V.pops && c.brake && rpm > 3000 && (popT -= dt) < 0) { popT = 0.06 + Math.random() * 0.18; hit(master, 'lowpass', 900 + Math.random() * 600, 1, 0.001, 0.05, 0.25 + 0.2 * Math.random()); } // exhaust pops on lift-off
     if (p.landed) { const k = Math.min(1, p.airTime / 0.6); tone(master, 'sine', 90, 34, 0.004, 0.32, 0.25 + 0.4 * k); hit(master, 'lowpass', 420, 1, 0.003, 0.18, 0.2 + 0.3 * k); stats.played.land++; }
     if (p.crashes !== lastCrashes) { if (p.crashes > lastCrashes) { hit(master, 'bandpass', 900, 0.8, 0.003, 0.45, 0.6); tone(master, 'sine', 70, 30, 0.004, 0.4, 0.5); stats.played.crash++; } lastCrashes = p.crashes; }
   };
-  function setEngine(v, t, brake = false, flying = false) {
-    let gear = 1; while (gear < GEARS.length - 1 && v > GEARS[gear]) gear++;
-    const lo = GEARS[gear - 1], hi = GEARS[gear], r = Math.min(1, Math.max(0, (v - lo) / (hi - lo)));
-    const hz = (flying ? 1.12 : 1) * (38 + gear * 4 + r * 95); // revs climb through each gear, drop at a shift, flare in the air
-    stats.engineHz = hz;
-    eng.o1.frequency.setTargetAtTime(hz, t, 0.04); eng.o2.frequency.setTargetAtTime(hz / 2, t, 0.04);
-    eng.f.frequency.setTargetAtTime(280 + v * 28 + (brake ? -120 : 0), t, 0.06);
-    eng.g.gain.setTargetAtTime(brake ? 0.07 : 0.12, t, 0.08);
-  }
-
   // On foot: a heel on stone every stride, quicker and harder when running.
   a.walk = (agent) => {
     const stride = agent.running ? 1.3 : 0.8;
     if (agent.walked - lastWalked < stride) { if (agent.walked < lastWalked) lastWalked = agent.walked; return; }
     lastWalked = agent.walked;
     if (paused || !agent.walking) return;
-    if (hit(master, 'bandpass', (agent.running ? 1500 : 1200) * (0.9 + Math.random() * 0.2), 3, 0.002, agent.running ? 0.06 : 0.05, agent.running ? 0.3 : 0.2)) stats.played.step++;
+    if (hit(master, 'bandpass', (agent.running ? 1500 : 1200) * (0.9 + Math.random() * 0.2), 3, 0.002, agent.running ? 0.05 : 0.04, agent.running ? 0.14 : 0.09)) stats.played.step++; // soft heels on stone
   };
 
-  // Heat rose: low strings swelling into a sharp plucked pair and a low thud.
+  // Heat rose: a short, soft warning in the variant's own voice (a low bell, a dark piano cluster, or a
+  // pad swell), and a quiet button tick.
   a.sting = () => {
     if (!a.ctx) return;
-    for (const f of [82.4, 87.3, 123.5]) tone(master, 'sawtooth', f, f, 0.35, 0.7, 0.05);
-    pluck(master, 0, 0.5, 0.35); pluck(master, 1, 0.35, 0.35); tone(master, 'sine', 50, 40, 0.005, 0.5, 0.35, 0.35);
+    const t = a.ctx.currentTime;
+    if (a.variant === 'a') play(bell(110), master, t, 0.12);
+    else if (a.variant === 'b') for (const [m, d] of [[40, 0], [46, 0.02], [51, 0.04], [52, 0.05]]) play(piano(m), master, t + d, 0.12, 1.6);
+    else for (const f of [87.3, 92.5, 130.8]) tone(master, 'triangle', f, f, 0.4, 0.9, 0.06);
     stats.played.sting++;
   };
-
-  // Buttons: a short wooden click.
-  a.tick = () => { if (a.ctx && hit(master, 'bandpass', 1800, 8, 0.001, 0.05, 0.7)) stats.played.tick++; };
+  a.tick = () => { if (a.ctx && tone(master, 'sine', 1400, 1100, 0.002, 0.03, 0.05)) stats.played.tick++; };
 
   // A touch pointerdown is not a user activation (Chrome's autoplay rule, and iOS Safari wants touchend or click), so listen to all of them; unlock is idempotent.
   // For tests: how loud the game is right now (RMS of the mix), read through an analyser made on first use.
   let probe = null, probeData = null;
+  a.out = () => master; // for tests and recordings: the mix before the compressor
   a.level = () => {
     if (!a.ctx || !master) return 0;
     if (!probe) { probe = a.ctx.createAnalyser(); probe.fftSize = 2048; probeData = new Float32Array(probe.fftSize); master.connect(probe); live(1); }
