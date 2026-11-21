@@ -202,7 +202,8 @@ export function makeAudio() {
   // Buttons: a short wooden click.
   a.tick = () => { if (a.ctx && hit(master, 'bandpass', 1800, 8, 0.001, 0.05, 0.7)) stats.played.tick++; };
 
-  for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, a.unlock, { capture: true });
+  // A touch pointerdown is not a user activation (Chrome's autoplay rule, and iOS Safari wants touchend or click), so listen to all of them; unlock is idempotent.
+  for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) addEventListener(ev, a.unlock, { capture: true });
   document.addEventListener('visibilitychange', () => { if (!a.ctx || a.muted) return; if (document.hidden) a.ctx.suspend().catch(() => {}); else a.ctx.resume().catch(() => {}); });
   return a;
 }
