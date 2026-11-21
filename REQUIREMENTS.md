@@ -60,7 +60,7 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 | W14 | Use several focused subagents in parallel for independent parts of a task only when it pays off, keeping token use balanced. | Preference |
 | W15 | Show results (e.g. test runs) in simple tables when asked. | Preference |
 | W16 | Every update says what the work is waiting on: Hitoshi, Claude or GitHub (Hitoshi's rule, 2026-11-16). Options always come as selectable cards. | In place |
-| W17 | AI playtester (Hitoshi's choice, 2026-11-21: build it now, report only): `npm run playtest` plays the dossier case, Case 02 and the chase through `window.__agent` as three personas (novice, efficient, careless), 20 seeds each, and writes `playtest/playtest-report.json` (every run's timeline) and a Markdown summary with the R22 targets. Its own workflow runs it on PRs that touch `src/` or `game.js` (artifact `playtest`, job summary); it always passes and never blocks a merge. | In place (#35, PR_NUM) |
+| W17 | AI playtester (Hitoshi's choice, 2026-11-21: build it now, report only): `npm run playtest` plays the dossier case, Case 02 and the chase through `window.__agent` as three personas (novice, efficient, careless), 20 seeds each, and writes `playtest/playtest-report.json` (every run's timeline) and a Markdown summary with the R22 targets. Its own workflow runs it on PRs that touch `src/` or `game.js` (artifact `playtest`, job summary); it always passes and never blocks a merge. | In place (#35, #42) |
 
 ## 2. Shipped changes
 
@@ -93,8 +93,8 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 | 2026-11-20 | "Make car chase easier or be more lenient with out of sight / gap. Less air time." Cards: much easier; short hops. | R21: 12 s out of sight (was 6), seen up to 400 m (was 260), the meter refills twice as fast, he waits more when far ahead; crests give at most about half a second of air (was up to 1.7 s), and the cars no longer take off at the start of a stage. PR #31. |
 | 2026-11-21 | "Shorter car chase (1/4 of the length)", "Move on if user keeps the car in sight for a distance or actually catches up", "Different route each time". Cards: 30 s in sight in a row, or catching right up; random roads every run. | R21: one drive of about 45 s (1.5 km) out of Pienza, a new road and traffic every run, won early by 30 s in sight or catching up. PR #34. |
 | 2026-11-21 | "Less speed penalty for being off road", "Show wheel direction because physics don't seem to line up", then "a different indicator of wheel direction on bottom of screen" and mockups of each. Cards: light slowdown; steering indicator (slider bar centred at the bottom, Brake at the bottom right; docs/mockups/chase-steer.jpg). | R21: off the road tops out near 115 km/h (was 61); a steering slider centred at the bottom and Brake moved to the bottom right. The heading was checked and matches the steering (a test now checks it). PR #34. |
-| 2026-11-21 | Shared an analysis of how the repo uses agentic AI; asked for clarifying questions and tasks one by one. Recommendation 1, "Build it now, report only": an AI playtester; "Its own workflow" for CI. | Issue #35 filed as `ready`; W17, PR PR_NUM. |
-| 2026-11-21 | Pacing targets: case length for a novice 10–15 min; longest stretch with nothing new 45 s; chase cleared within 2 tries in 80% of seeds; novice seal first-try right 60–80%. "Set targets now, enforce later". | R22: the playtest summary shows each as met or missed; enforcing comes in a later task. PR PR_NUM. |
+| 2026-11-21 | Shared an analysis of how the repo uses agentic AI; asked for clarifying questions and tasks one by one. Recommendation 1, "Build it now, report only": an AI playtester; "Its own workflow" for CI. | Issue #35 filed as `ready`; W17, PR #42. |
+| 2026-11-21 | Pacing targets: case length for a novice 10–15 min; longest stretch with nothing new 45 s; chase cleared within 2 tries in 80% of seeds; novice seal first-try right 60–80%. "Set targets now, enforce later". | R22: the playtest summary shows each as met or missed; enforcing comes in a later task. PR #42. |
 
 ## 4. Open backlog
 
@@ -108,7 +108,7 @@ Add the `ready` label to an issue to start it.
 | – | Station chase when the thief gets away (R14, R15) | To file |
 | #15 | Case 02, The Compass Ledger: seals, question generators, fact bank (R20) | Done (#16, #19) |
 | #23 | Opening car chase, Pienza to Florence (R21) | Done (#24, #25, #27) |
-| #35 | AI playtester: persona bots that play every mode (W17, R22) | In progress (PR PR_NUM) |
+| #35 | AI playtester: persona bots that play every mode (W17, R22) | In progress (PR #42) |
 
 ## 5. Ideas mentioned, not yet requested
 
