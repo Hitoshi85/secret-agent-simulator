@@ -80,7 +80,6 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 
 | Date | Feedback / request from Hitoshi | Outcome |
 |---|---|---|
-| 2026-11-19 | "Can it be written in a way that questions/formats change every time and all questions are available to solve in any order?" | Seal board with all six seals open; subjects dealt to landmarks and formats drawn per play; letters fill fixed slots. Mockup revised to 11 screens. |
 | 2026-11-19 | "Every question should be different each time." Chose "40 per subject" for the first fact bank. | Generated engineering and cipher questions, drawn orderings and pairs, seen-question memory on the phone. |
 | 2026-11-19 | Approved the design with "Drop the early-guess finale", then: "Actually must answer 4 of 6 before guess". | The word may be guessed once 4 of 6 seals are broken (wrong guess adds Heat); saved as docs/mockups/case-02-compass.png. |
 | 2026-11-20 | "What happened to CI / Lint test" (the required check never ran after the merge queue rebased #16). | The queue's own pushes do not start pull_request CI, so new commits were pushed to run it; a test-order bug and one runner timeout were fixed or rerun, and Hitoshi merged #16 by hand. The full banks follow in #19. |
@@ -100,6 +99,7 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 | 2026-11-21 | "Make Case 02 the default instead of Case 01. Still provide car chase option at the beginning." Cards: keep Case 01 as a menu option; a case picker on the title; mockup approved with "Drop the NEW tag". | R25: two case cards on the title, Case 02 selected, the chase still first. PR #48. |
 | 2026-11-21 | From the repo analysis, chose "Yes, after the playtester" for weekly task proposals. Cards: "Scheduled Claude run"; "Daily run closes them" (issues whose PR merged); "Friday 7:00 NY". | W19, issue #50: docs/PROPOSALS.md for the weekly run, the daily run closes shipped issues and holds `visual` tasks until a mockup, the Friday report lists the proposals. PR #52. |
 | 2026-11-21 | "I didn't hear any sound on dev." Card: iPhone Safari with the silent switch on. | iPhone mutes web audio on silent: the game now asks to play like media (`navigator.audioSession`, or a silent looping `<audio>` on older iOS) and plays a silent sound inside the first tap (R24); PR #53. |
+| 2026-11-21 | "Still no sound in dev"; asked why the playtester didn't catch it. Chose "Add a sound check". | `tests/sound-check.spec.js` fails CI if, on the repo copy or either built site, a fresh phone starts muted or one touch tap doesn't make audible sound (measured on the mix, Chrome's autoplay rule on). It can't model the iPhone silent switch; PR #NN. |
 
 ## 4. Open backlog
 
