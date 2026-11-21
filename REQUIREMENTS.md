@@ -98,7 +98,7 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 | 2026-11-21 | Pacing targets: case length for a novice 10–15 min; longest stretch with nothing new 45 s; chase cleared within 2 tries in 80% of seeds; novice seal first-try right 60–80%. "Set targets now, enforce later". | R23: the playtest summary shows each as met or missed; enforcing comes in a later task. PR #42. |
 | 2026-11-21 | Reviewed the repo analysis and chose its sound task, "Original sound, generated in code". Cards: "B, Tuscan Noir" of three code-made mood samples; "Quiet bed on title and case file". | R24, issue #36: engine, tyres, brake, landings, footsteps, Heat sting, button clicks and the quiet bed, with a mute button on the pause screen; #45. |
 | 2026-11-21 | "Make Case 02 the default instead of Case 01. Still provide car chase option at the beginning." Cards: keep Case 01 as a menu option; a case picker on the title; mockup approved with "Drop the NEW tag". | R25: two case cards on the title, Case 02 selected, the chase still first. PR #48. |
-| 2026-11-21 | "I didn't hear any sound on dev." Card: iPhone Safari with the silent switch on. | iPhone mutes web audio on silent: the game now asks to play like media (`navigator.audioSession`, or a silent looping `<audio>` on older iOS) and plays a silent sound inside the first tap (R24); PR #NN. |
+| 2026-11-21 | "I didn't hear any sound on dev." Card: iPhone Safari with the silent switch on. | iPhone mutes web audio on silent: the game now asks to play like media (`navigator.audioSession`, or a silent looping `<audio>` on older iOS) and plays a silent sound inside the first tap (R24); PR #53. |
 
 ## 4. Open backlog
 
@@ -112,7 +112,7 @@ Add the `ready` label to an issue to start it.
 | – | Station chase when the thief gets away (R14, R15) | To file |
 | #15 | Case 02, The Compass Ledger: seals, question generators, fact bank (R20) | Done (#16, #19) |
 | #23 | Opening car chase, Pienza to Florence (R21) | Done (#24, #25, #27) |
-| #36 | Original sound, generated in code (R24) | Done (#45, #NN) |
+| #36 | Original sound, generated in code (R24) | Done (#45, #53) |
 | #37 | Feedback button sends session context (R22) | Done (#40) |
 | #35 | AI playtester: persona bots that play every mode (W18, R23) | In progress (PR #42) |
 
