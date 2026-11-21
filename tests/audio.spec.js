@@ -48,8 +48,9 @@ test('the chase and the walk make sound within the node budget', async ({ page }
   // On foot: footsteps on stone, the Heat sting on a wrong accusation, and a click on buttons.
   const f = await page.evaluate(async () => {
     const A = window.__agent, S = A.audio.stats;
-    A.chase.action('skip'); A.act('close');
-    A.act('walkTo', A.agent.x + 30, A.agent.z, true);
+    A.chase.action('skip');
+    for (let i = 0; i < 3 && A.caseView.sheetOpen(); i++) A.act('close'); // the case file, then the handler's lead
+    A.act('walkTo', ...A.PLACES.find((p) => p.id === 'calzaiuoli').at, true); // a long walk south down the street
     for (let i = 0; i < 120; i++) { A.step(1 / 30); if (i % 20 === 0) await new Promise((r) => setTimeout(r, 0)); }
     const steps = S.played.step;
     const wrong = A.case.suspects.find((s) => !s.thief);
