@@ -157,6 +157,7 @@ test('questions answer by tapping: options, keypad, switches', async ({ page }) 
 });
 
 test('Case 02 is the default and the title picks Case 01; Begin still offers the chase', async ({ page }) => {
+  test.setTimeout(240000); // three page loads
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   const ready = () => page.waitForFunction(() => window.__agent && window.__agent.stats.frames > 2, null, { timeout: 60000 });
