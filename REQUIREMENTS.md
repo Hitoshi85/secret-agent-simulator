@@ -9,7 +9,7 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
   on a phone to skip a cached copy; the current links with that suffix are always in [README.md](README.md))
 - **Backlog:** [open issues](https://github.com/Hitoshi85/secret-agent-simulator/issues)
 - **Mockups:** the agreed look (v2), the case screens (case 01, case 02) and the Tuscany car chase are in [docs/mockups/](docs/mockups/)
-- **Last updated:** 2026-11-20
+- **Last updated:** 2026-11-21
 
 ## 1. Core requirements
 
@@ -38,6 +38,7 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 | R19 | Finding leads without aimless walking (Hitoshi's feedback, 2026-11-16): gold arrows at the screen edge point to witnesses and traces not visited yet, showing only the distance, never who or what is there; and when you take the case, your handler's first lead arrives on the Phone. | Done (#12) |
 | R20 | Case 02, "The Compass Ledger" (Hitoshi's request, 2026-11-19): a separate art-mystery case with an original story (a fictional guild of Renaissance engineers and its hidden ledger). Six seals at landmarks, one per subject (world, art, military and technology history, mechanical and electrical engineering), open in any order; questions at high school to college level in mixed formats (multiple choice, put in order, cipher, match pairs, calculation, control logic). Every question is different each time: engineering questions and ciphers are generated, orderings and pairs are drawn from banks, facts come from a bank of 40 per subject, and seen questions are remembered on the phone. Wrong answers add Heat; each seal gives a letter of a hidden word that may be guessed after 4 of 6 seals; then fetch the ledger at the word's place. `?case=compass`. | Done (#16, #19) |
 | R21 | Opening car chase (Hitoshi's request, 2026-11-20, mockup docs/mockups/tuscany-chase.jpg): the game opens in Tuscany. In an original little red two-door you follow a black off-roader from Pienza through Val d'Orcia (cypress avenues, rolling hills), along the Siena road and through the Chianti hills to Florence. Since 2026-11-21: one drive of about 45 s out of Pienza on a road generated fresh every run, won early by keeping him in sight for 30 s in a row or catching right up behind him; a steering slider at the bottom middle (Brake at the bottom right); going off the road only slows you a little. Pure driving: hold the left or right half of the screen to steer (keys: ← → or A D, Space / ↓ / S to brake), the car speeds up by itself, and brake lights glow while braking. Both cars top out near 140 km/h; yours is nimbler in bends and his is faster on straights. Air time over crests, two-way traffic, a speedometer, and a gold distance tag over his car. Keep him in sight: a meter drains while he is hidden and the drive restarts when it empties. Skip to Florence at any time; then the case starts on foot. | Done (#24, #25, #27, #31, #34) |
+| R22 | Original sound made in code with Web Audio, no audio files and nothing imitating a known film or game theme (Hitoshi's choice from the repo review, 2026-11-21). Mood "Tuscan Noir": plucked strings and a low bowed drone. The red car's engine note follows its speed and gear shifts, gravel rumbles off the road, the brakes squeal, crests thump on landing and crashes crunch; footsteps on stone (quicker when running); a short sting when Heat rises; a wooden click on every button; a quiet music bed only on the title, the case file and the chase cards. Sound starts after the first tap or key; 🔊 Sound on/off on the pause screen is remembered on the phone; at most 64 live audio nodes (`tests/audio.spec.js`). | Done (XXPR) |
 
 ### How we work
 
@@ -73,7 +74,6 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 
 | Date | Feedback / request from Hitoshi | Outcome |
 |---|---|---|
-| 2026-11-15 | "Where is the case/mission?" First case cards: "Recover the stolen dossier"; "Witnesses and traces"; "Free accusations, Heat each"; "Wrong guesses only, thief flees"; "Crack the thief's phone". | Case 01 "The Dossier" built from those choices in #6 (R11, R12, R15, R16). |
 | 2026-11-15 | "Keep cases as separate code so it's easy to swap/edit cases." | Each case is a data file in `src/cases/`, run by the engine in `src/case/` (R18), #6. |
 | 2026-11-15 | Case mockup (five phone screens): "Build it as shown". | Saved as docs/mockups/case-01-dossier.png and built in #6. |
 | 2026-11-16 | The README bot PRs got stuck behind GitHub's approval for runs from the bot and blocked the queue. Chose "Queue approves its own". | The merge queue approves the held CI run only on `bot/play-links` README-only PRs, and skips a PR it cannot merge instead of stopping; #10. |
@@ -93,6 +93,7 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 | 2026-11-20 | "Make car chase easier or be more lenient with out of sight / gap. Less air time." Cards: much easier; short hops. | R21: 12 s out of sight (was 6), seen up to 400 m (was 260), the meter refills twice as fast, he waits more when far ahead; crests give at most about half a second of air (was up to 1.7 s), and the cars no longer take off at the start of a stage. PR #31. |
 | 2026-11-21 | "Shorter car chase (1/4 of the length)", "Move on if user keeps the car in sight for a distance or actually catches up", "Different route each time". Cards: 30 s in sight in a row, or catching right up; random roads every run. | R21: one drive of about 45 s (1.5 km) out of Pienza, a new road and traffic every run, won early by 30 s in sight or catching up. PR #34. |
 | 2026-11-21 | "Less speed penalty for being off road", "Show wheel direction because physics don't seem to line up", then "a different indicator of wheel direction on bottom of screen" and mockups of each. Cards: light slowdown; steering indicator (slider bar centred at the bottom, Brake at the bottom right; docs/mockups/chase-steer.jpg). | R21: off the road tops out near 115 km/h (was 61); a steering slider centred at the bottom and Brake moved to the bottom right. The heading was checked and matches the steering (a test now checks it). PR #34. |
+| 2026-11-21 | Reviewed the repo analysis and chose its sound task, "Original sound, generated in code". Cards: "B, Tuscan Noir" of three code-made mood samples; "Quiet bed on title and case file". | R22, issue #36: engine, tyres, brake, landings, footsteps, Heat sting, button clicks and the quiet bed, with a mute button on the pause screen; XXPR. |
 
 ## 4. Open backlog
 
@@ -106,6 +107,7 @@ Add the `ready` label to an issue to start it.
 | – | Station chase when the thief gets away (R14, R15) | To file |
 | #15 | Case 02, The Compass Ledger: seals, question generators, fact bank (R20) | Done (#16, #19) |
 | #23 | Opening car chase, Pienza to Florence (R21) | Done (#24, #25, #27) |
+| #36 | Original sound, generated in code (R22) | In progress (XXPR) |
 
 ## 5. Ideas mentioned, not yet requested
 
