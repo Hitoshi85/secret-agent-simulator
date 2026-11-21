@@ -22,7 +22,8 @@ const CONFLICT_LABEL = 'queue-conflict';      // set when a PR conflicts with ma
 const QUEUE_WORKFLOW = 'merge-queue.yml';
 const CI_WORKFLOW = 'ci.yml';
 const DEPLOY_WORKFLOW = 'pages.yml';
-const SELF_CHECKS = ['Merge queue', 'Wake the merge queue']; // the queue's own jobs, never wait on them
+// The queue's own jobs, and the report-only AI playtest (playtest.yml): never wait on them or count them.
+const SELF_CHECKS = ['Merge queue', 'Wake the merge queue', 'AI playtest (report only)'];
 // Not counted towards the size limit: lock files, images and vendored libraries (vendor/).
 const SIZE_IGNORED = [/^package-lock\.json$/, /^docs\/screens\//, /^vendor\//, /\.(png|jpe?g|gif|webp)$/i];
 // GITHUB_TOKEN may not push or merge workflow changes, and those deserve the owner's eyes anyway.

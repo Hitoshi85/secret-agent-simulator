@@ -157,10 +157,16 @@ test('questions answer by tapping: options, keypad, switches', async ({ page }) 
 });
 
 test('Case 02 is the default and the title picks Case 01; Begin still offers the chase', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
   const ready = () => page.waitForFunction(() => window.__agent && window.__agent.stats.frames > 2, null, { timeout: 60000 });
   await page.goto('/index.html'); await ready();
   await expect(page.locator('#cases [data-place="compass"]')).toHaveAttribute('aria-pressed', 'true');
   expect(await page.evaluate(() => [window.__agent.caseId, window.__agent.caseView])).toEqual(['compass', null]);
+  // The title runs frames and Feedback with no case built yet.
+  await page.evaluate(() => { window.open = () => null; for (let i = 0; i < 5; i++) window.__agent.step(0.05); window.__agent.act('feedback'); });
+  expect(await page.evaluate(() => window.__agent.stats.lastFeedbackUrl)).toContain('Mode%3A+title');
+  expect(errors, 'no page errors on the title').toEqual([]);
   await page.click('#begin');
   await expect(page.locator('#chaseCard')).toBeVisible();
   await page.click('#chaseBody [data-chase="skip"]');
@@ -177,4 +183,5 @@ test('Case 02 is the default and the title picks Case 01; Begin still offers the
 
   await page.goto('/index.html?case=dossier'); await ready();
   await expect(page.locator('#cases [data-place="dossier"]')).toHaveAttribute('aria-pressed', 'true');
+  expect(errors).toEqual([]);
 });

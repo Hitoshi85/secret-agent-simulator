@@ -4,7 +4,7 @@
 
 <!-- play-links:start -->
 - **Prod** (prod-2, 5070e4b): https://hitoshi85.github.io/secret-agent-simulator/
-- **Dev** (6453490): https://hitoshi85.github.io/secret-agent-simulator/dev/
+- **Dev** (fd34d78): https://hitoshi85.github.io/secret-agent-simulator/dev/
 <!-- play-links:end -->
 
 Prod is the stable version and changes only on "Ship". Dev has every merged change and shows a
