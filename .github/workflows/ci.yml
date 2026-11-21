@@ -25,11 +25,44 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check:
-    name: Lint and smoke test
+  # README-only changes (such as the Pages workflow's play-links PR) change nothing in the game, so
+  # they skip the browser tests. Push, PR and queue-test runs all look at the files they change.
+  changes:
+    name: Find changed files
     runs-on: ubuntu-latest
-    # A full run takes 10 to 14 minutes on a typical runner; slow runners need the headroom.
-    timeout-minutes: 30
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      readme_only: ${{ steps.files.outputs.readme_only }}
+    steps:
+      - id: files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number || inputs.pr }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          if [ -n "$PR" ]; then
+            files=$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --jq '.[].filename')
+          elif [ "$GITHUB_EVENT_NAME" = push ] && [ -n "$BEFORE" ] && [ "$BEFORE" != 0000000000000000000000000000000000000000 ]; then
+            files=$(gh api "repos/$GITHUB_REPOSITORY/compare/$BEFORE...$AFTER" --jq '.files[].filename')
+          else
+            files=''
+          fi
+          printf 'Changed files:\n%s\n' "$files"
+          if [ -n "$files" ] && [ "$(printf '%s\n' "$files" | grep -cvx 'README.md')" = 0 ]; then
+            echo "readme_only=true" >> "$GITHUB_OUTPUT"
+            echo "Only README.md changed: skipping the browser tests."
+          else
+            echo "readme_only=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,45 +86,122 @@ jobs:
           shellcheck .github/scripts/*.sh
       - run: npm ci
       - run: npm run lint
+      # The README play links must match REQUIREMENTS.md; this check needs no browser.
+      - name: Requirements log check
+        run: npx playwright test tests/requirements.spec.js
+
+  # The Playwright suite, split into 3 parallel shards (owner's choice, 2026-11-21).
+  test:
+    name: Tests ${{ matrix.shard }}/3
+    needs: changes
+    if: needs.changes.outputs.readme_only != 'true'
+    runs-on: ubuntu-latest
+    # A whole run took 10 to 14 minutes on one runner; a third of it, plus setup, needs far less.
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ inputs.base && '0' || '1' }}
+      - name: Merge main into the PR (merge queue test)
+        if: inputs.base != ''
+        env:
+          BASE: ${{ inputs.base }}
+        run: |
+          git fetch --no-tags origin "$BASE"
+          git -c user.name=merge-queue -c user.email=merge-queue@users.noreply.github.com \
+            merge --no-edit FETCH_HEAD
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Smoke, phone screenshot and rendering-budget tests
-        timeout-minutes: 20
-        run: npm test
+      - name: Smoke, phone screenshot and rendering-budget tests (shard ${{ matrix.shard }} of 3)
+        timeout-minutes: 15
+        run: npx playwright test --shard=${{ matrix.shard }}/3
       - name: Upload phone screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: phone-screenshots
+          name: phone-screenshots-shard-${{ matrix.shard }}
           path: phone-screenshots/
           if-no-files-found: ignore
-          retention-days: 14
-      # The same phone screenshots taken on main, so the reviewer can compare before and after.
-      - name: Phone screenshots of main, for comparison
-        if: always() && github.event_name == 'pull_request'
-        continue-on-error: true
-        timeout-minutes: 8
-        run: |
-          git fetch --depth=1 origin "${{ github.base_ref }}"
-          git worktree add main-src FETCH_HEAD
-          cd main-src && npm ci && npx playwright test tests/phone-checks.spec.js --grep screenshots
-      - name: Upload main's phone screenshots
-        if: always() && github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: phone-screenshots-main
-          path: main-src/phone-screenshots/
-          if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 1
       - name: Upload report on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: |
             playwright-report/
             test-results/
           retention-days: 7
+
+  # The same phone screenshots taken on main, so the reviewer can compare before and after.
+  # Its own job, so the required check no longer waits for it.
+  main-screenshots:
+    name: Phone screenshots of main
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.readme_only != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # Only for comparison: a failure here must not mark the PR red.
+      - name: Phone screenshots of main
+        continue-on-error: true
+        run: npm ci && npx playwright install --with-deps chromium && npx playwright test tests/phone-checks.spec.js --grep screenshots
+      - name: Upload main's phone screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phone-screenshots-main
+          path: phone-screenshots/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # The one check that main's branch rule and the merge queue require: green when lint passed and
+  # every test shard passed (or the tests were skipped because only README.md changed).
+  check:
+    name: Lint and smoke test
+    needs: [changes, lint, test]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Sum up lint and the test shards
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          LINT: ${{ needs.lint.result }}
+          TESTS: ${{ needs.test.result }}
+          README_ONLY: ${{ needs.changes.outputs.readme_only }}
+        run: |
+          echo "changes: $CHANGES, lint: $LINT, tests: $TESTS, README only: $README_ONLY"
+          [ "$CHANGES" = success ] && [ "$LINT" = success ] || exit 1
+          if [ "$TESTS" = success ]; then exit 0; fi
+          if [ "$TESTS" = skipped ] && [ "$README_ONLY" = true ]; then exit 0; fi
+          exit 1
+      # One phone-screenshots artifact, as before, for the project reviewer.
+      - name: Join the shards' phone screenshots
+        if: needs.test.result != 'skipped'
+        continue-on-error: true
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: phone-screenshots
+          pattern: phone-screenshots-shard-*
+          delete-merged: true
+          retention-days: 14
 
   # Runs started by the merge queue (with its built-in token) fire no workflow_run event, so nothing
   # would tell the queue they finished. Starting a workflow is the one thing that token may do.
