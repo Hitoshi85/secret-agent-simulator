@@ -133,10 +133,12 @@ export function makeAudio() {
   function piano(m) {
     const key = 'p' + m; if (cache[key]) return cache[key];
     const ctx = a.ctx, sr = ctx.sampleRate, len = Math.ceil(sr * 2.5), b = ctx.createBuffer(1, len, sr), d = b.getChannelData(0), f = mtof(m);
-    for (let n = 1; n <= 10; n++) {
+    for (let n = 1; n <= 10; n++) { // each partial by recurrence (no sin or exp per sample: a note takes a few ms, not tens)
       const fn = f * n * Math.sqrt(1 + 0.0004 * n * n); if (fn > sr / 2.5) break;
       const amp = Math.pow(n, -1.3) * (m > 72 ? Math.pow(0.7, n) : 1), d1 = 1.2 + 0.9 * n + f / 300, w = 2 * Math.PI * fn / sr;
-      for (let i = 0; i < len; i++) { const t = i / sr; d[i] += amp * Math.sin(w * i) * (0.7 * Math.exp(-t * d1) + 0.3 * Math.exp(-t * 0.6)); }
+      const c2 = 2 * Math.cos(w), r1 = Math.exp(-d1 / sr), r2 = Math.exp(-0.6 / sr);
+      let s0 = 0, s1 = Math.sin(w), e1 = 0.7 * amp, e2 = 0.3 * amp;
+      for (let i = 0; i < len; i++) { d[i] += s0 * (e1 + e2); const s2 = c2 * s1 - s0; s0 = s1; s1 = s2; e1 *= r1; e2 *= r2; }
     }
     let s = 3; for (let i = 0; i < sr * 0.006; i++) { s = (s * 16807) % 2147483647; d[i] += (s / 1073741823.5 - 1) * 0.08 * (1 - i / (sr * 0.006)); }
     for (let i = 0; i < 200; i++) d[i] *= i / 200;
@@ -157,6 +159,10 @@ export function makeAudio() {
     [45, [55, 60, 64, 67]], [38, [54, 57, 60, 64]], [43, [58, 62, 65, 69]], [36, [58, 60, 65, 67]]];
   const SCALE = [65, 67, 69, 72, 74, 77, 79]; // melody notes, F major pentatonic plus G
   const BAR = 4 * 60 / 62; // 62 bpm
+  // Every note the bed and the sting can play, made a few per frame before the bed starts, so no frame
+  // stalls on making them (a long frame there once broke the street's double tap).
+  const NOTES = [...new Set([...JAZZ.flatMap(([bass, chord]) => [bass, bass + 7, bass - 1, bass + 1, ...chord]), ...SCALE, 40, 46, 51, 52])];
+  const warm = () => { let made = 0; for (const m of NOTES) { if (cache['p' + m]) continue; if (made++ >= 2) return false; piano(m); } return true; };
   function startBed() {
     const ctx = a.ctx, out = ctx.createGain(), t = ctx.currentTime; out.gain.value = 0; out.connect(master);
     out.gain.setTargetAtTime(1, t, 0.8);
@@ -187,6 +193,7 @@ export function makeAudio() {
     if (!a.ctx || a.muted || a.ctx.state !== 'running') return;
     on = on && !paused; stats.bed = on;
     const playing = bed && !bed.off;
+    if (on && !playing && !warm()) return; // the notes are still being made
     if (on && !playing) startBed(); else if (!on && playing) stopBed();
     if (!on) return;
     const t = a.ctx.currentTime, level = soft ? 0.7 : 1;
