@@ -114,3 +114,64 @@ test('report body has every section and the 4 numbers', () => {
   expect(body).toContain('| n/a |');
   expect(body).toContain('| 50% |');
 });
+
+test('a visual task waits for a mockup in docs/mockups/', () => {
+  const since = hoursAgo(50);
+  const visual = (body) => issue(1, ['task', 'proposed', 'visual'], { body });
+  expect(d.vetoReason(visual('Goal: new HUD'), [], since, NOW)).toMatch(/mockup/);
+  expect(d.vetoReason(visual('Mockup: docs/mockups/hud.png'), [], since, NOW)).toBeNull();
+  expect(d.vetoReason(issue(1, ['task', 'proposed'], { body: 'no mockup needed' }), [], since, NOW)).toBeNull();
+});
+
+test('open issues a merged PR closes are found once, unmerged PRs ignored', () => {
+  expect(d.closesIssues('Closes #5\nfixes #7, resolves #5')).toEqual([5, 7]);
+  const prs = [
+    { number: 12, body: 'Closes #11', merged_at: '2026-11-16T05:07:25Z' },
+    { number: 6, body: 'Closes #5', merged_at: '2026-11-15T23:17:53Z' },
+    { number: 7, body: 'Fixes #5 too', merged_at: '2026-11-16T00:00:00Z' },
+    { number: 30, body: 'Closes #29', merged_at: null },
+    { number: 40, body: 'No closing line', merged_at: '2026-11-21T05:23:41Z' },
+    { number: 50, body: 'Closes #3', merged_at: '2026-11-21T06:00:00Z' },
+  ];
+  const open = [issue(5, ['task']), issue(11, ['task']), issue(29, ['task']), issue(37, ['task']), { number: 3, pull_request: {} }];
+  expect(d.shippedOpen(prs, open).map(({ issue, pr }) => ({ issue, pr }))).toEqual([{ issue: 5, pr: 6 }, { issue: 11, pr: 12 }]);
+  expect(d.shippedOpen([], open)).toEqual([]);
+});
+
+test('a shipped issue someone reopened stays open', () => {
+  const merged = '2026-11-15T23:17:53Z';
+  expect(d.keepOpenReason([], [], merged)).toBeNull();
+  // Closed by the run once, then reopened: never closed again.
+  expect(d.keepOpenReason([{ body: `Shipped in #6. ${d.CLOSED_MARKER}` }], [], merged)).toMatch(/once/);
+  // Reopened by hand after the PR merged.
+  expect(d.keepOpenReason([], [{ event: 'reopened', created_at: '2026-11-16T10:00:00Z' }], merged)).toMatch(/reopened/);
+  // A reopen before the merge does not count.
+  expect(d.keepOpenReason([], [{ event: 'reopened', created_at: '2026-11-15T10:00:00Z' }], merged)).toBeNull();
+});
+
+test('the report lists this week\'s proposals with what became of them', () => {
+  const weekStart = hoursAgo(7 * 24);
+  const ev = (h) => [{ event: 'labeled', label: { name: 'proposed' }, created_at: hoursAgo(h).toISOString() }];
+  const items = [
+    { issue: issue(61, ['task', 'proposed'], { title: 'Waiting' }), events: ev(10) },
+    { issue: issue(60, ['task', 'ready'], { title: 'Promoted' }), events: ev(60) },
+    { issue: issue(62, ['task'], { title: 'Dropped', state: 'closed', state_reason: 'not_planned' }), events: ev(20) },
+    { issue: issue(63, ['task', 'proposed', 'needs-yes'], { title: 'Big' }), events: ev(30) },
+    { issue: issue(40, ['task', 'proposed', 'hold'], { title: 'Old' }), events: ev(300) },
+    { issue: issue(41, ['task', 'ready'], { title: 'Old ready' }), events: ev(300) },
+    { issue: issue(64, ['task', 'ready'], { title: 'Filed by Hitoshi' }), events: [] },
+  ];
+  expect(d.proposalLines(items, weekStart)).toEqual([
+    '#40 Old (proposed, hold, from an earlier week)',
+    '#60 Promoted (ready)',
+    '#61 Waiting (proposed)',
+    '#62 Dropped (dropped)',
+    '#63 Big (proposed, needs-yes)',
+  ]);
+  const body = d.reportBody({
+    weekOf: '2026-11-13', shipped: [], closed: ['#5 First case (shipped in #6)'], proposed: ['#61 Waiting (proposed)'], blocked: [],
+    links: '', numbers: { messagesPerPr: null, mergedWithoutOwner: 0, leadTimeHours: null, playerFacingShare: null, merged: 0 },
+  });
+  expect(body).toContain('Issues closed because their PR merged:\n- #5 First case (shipped in #6)');
+  expect(body).toContain('- #61 Waiting (proposed)');
+});
