@@ -28,7 +28,7 @@ export function makeAudio() {
   const stats = { state: 'off', nodes: 0, peak: 0, skipped: 0, engineHz: 0, squeal: 0, rumble: 0, played: { step: 0, land: 0, crash: 0, sting: 0, tick: 0 } };
   const a = { stats, muted: store.get(), ctx: null, variant: pickVariant() };
   const V = CAR_VARIANTS[a.variant];
-  let bed = null, master = null, eng = null, rpm = IDLE, gear = 1, cut = 0, popT = 0, noise = null, paused = false, lastCrashes = 0, lastWalked = 0;
+  let bed = null, master = null, comp = null, eng = null, rpm = IDLE, gear = 1, cut = 0, popT = 0, noise = null, paused = false, lastCrashes = 0, lastWalked = 0;
 
   const live = (k) => { stats.nodes += k; stats.peak = Math.max(stats.peak, stats.nodes); };
 
@@ -38,8 +38,9 @@ export function makeAudio() {
     // One noise buffer, made once.
     noise = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     { const d = noise.getChannelData(0); let s = 7; for (let i = 0; i < d.length; i++) { s = (s * 16807) % 2147483647; d[i] = s / 1073741823.5 - 1; } }
-    const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4; comp.connect(ctx.destination);
-    master = ctx.createGain(); master.gain.value = 0.5; // quiet overall (Hitoshi: tone it all down) master.connect(comp);
+    comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4; comp.connect(ctx.destination);
+    master = ctx.createGain(); master.gain.value = 0.5; // quiet overall (Hitoshi: tone it all down)
+    master.connect(comp);
     live(3); // compressor, master, destination
     ctx.onstatechange = () => { stats.state = ctx.state; };
     stats.state = ctx.state;
@@ -303,12 +304,12 @@ export function makeAudio() {
   a.tick = () => { if (a.ctx && tone(master, 'sine', 1400, 1100, 0.002, 0.03, 0.05)) stats.played.tick++; };
 
   // A touch pointerdown is not a user activation (Chrome's autoplay rule, and iOS Safari wants touchend or click), so listen to all of them; unlock is idempotent.
-  // For tests: how loud the game is right now (RMS of the mix), read through an analyser made on first use.
+  // For tests: how loud the game is right now (RMS of what reaches the speakers, after the compressor), read through an analyser made on first use.
   let probe = null, probeData = null;
-  a.out = () => master; // for tests and recordings: the mix before the compressor
+  a.out = () => comp; // for tests and recordings: the final mix, exactly what goes to the speakers
   a.level = () => {
-    if (!a.ctx || !master) return 0;
-    if (!probe) { probe = a.ctx.createAnalyser(); probe.fftSize = 2048; probeData = new Float32Array(probe.fftSize); master.connect(probe); live(1); }
+    if (!a.ctx || !comp) return 0;
+    if (!probe) { probe = a.ctx.createAnalyser(); probe.fftSize = 2048; probeData = new Float32Array(probe.fftSize); comp.connect(probe); live(1); }
     probe.getFloatTimeDomainData(probeData);
     let sum = 0; for (const x of probeData) sum += x * x;
     return Math.sqrt(sum / probeData.length);
