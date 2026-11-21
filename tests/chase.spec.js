@@ -77,7 +77,7 @@ test('the steering slider at the bottom middle follows the steering, the car goe
     for (let i = 0; i < 30; i++) A.step(1 / 30);
     C.input.keys.right = true;
     for (let i = 0; i < 8; i++) A.step(1 / 30);
-    const wheel = document.querySelector('#cWheel b').style.transform, box = document.getElementById('cWheel').getBoundingClientRect(), brake = document.getElementById('cBrake').getBoundingClientRect();
+    const wheel = document.querySelector('#cWheel b').style.left, box = document.getElementById('cWheel').getBoundingClientRect(), brake = document.getElementById('cBrake').getBoundingClientRect();
     // direction of travel over one frame against the way the body points (its local +x)
     const x0 = F.position.x, z0 = F.position.z; A.step(1 / 30);
     const moved = Math.atan2(F.position.x - x0, F.position.z - z0), points = Math.atan2(Math.cos(F.rotation.y), -Math.sin(F.rotation.y));
@@ -91,7 +91,7 @@ test('the steering slider at the bottom middle follows the steering, the car goe
     for (let i = 0; i < 150; i++) { car.d = 8; car.psi = 0; drivePlayer(car, road, 1 / 30, 0, false); }
     return { wheel, box: { top: box.top, mid: box.left + box.width / 2, right: box.right, h: innerHeight, w: innerWidth, brakeLeft: brake.left, brakeRight: brake.right }, off, offKmh: car.v * KMH };
   });
-  expect(Number(/translateX\((-?[\d.]+)px\)/.exec(r.wheel)[1]), 'marker slid right').toBeGreaterThan(35);
+  expect(Number(/calc\(([\d.]+)%/.exec(r.wheel)[1]), 'marker slid right').toBeGreaterThan(75);
   expect(r.box.top, 'at the bottom of the screen').toBeGreaterThan(r.box.h * 0.7);
   expect(Math.abs(r.box.mid - r.box.w / 2), 'centred').toBeLessThan(1);
   expect(r.box.brakeLeft, 'Brake at the bottom right, clear of the slider').toBeGreaterThan(r.box.right);
@@ -189,6 +189,18 @@ test.describe('on a phone', () => {
     expect(turned.steer).toBe(1);
     expect(turned.psi, 'turns right').toBeGreaterThan(d0);
     expect(await page.evaluate(() => window.__agent.chase.input.right)).toBe(0);
+  });
+
+  test('the steering slider sits between the speedometer and Brake on 320, 360 and 390 wide phones', async ({ page }) => {
+    await open(page);
+    for (const width of [320, 360, 390]) {
+      await page.setViewportSize({ width, height: 780 });
+      const r = await page.evaluate(() => { const b = (id) => document.getElementById(id).getBoundingClientRect(); return { s: b('cWheel'), sp: b('cSpeedo'), br: b('cBrake'), w: innerWidth }; });
+      expect(r.s.left, `${width}: clear of the speedometer`).toBeGreaterThanOrEqual(r.sp.right);
+      expect(r.s.right, `${width}: clear of Brake`).toBeLessThanOrEqual(r.br.left);
+      expect(Math.abs(r.s.left + r.s.width / 2 - r.w / 2), `${width}: centred`).toBeLessThan(1);
+      expect(r.s.width, `${width}: wide enough to read`).toBeGreaterThanOrEqual(80);
+    }
   });
 
   test('the chase view stays within 250 draw calls, 400k triangles and 4 ms of game work', async ({ page }) => {

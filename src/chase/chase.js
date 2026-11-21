@@ -121,7 +121,7 @@ export function makeChase({ renderer, onDone, toast }) {
     else if (c.player.air > 0.25) { pill.hidden = false; pill.className = 'cpill air'; pill.textContent = `AIR TIME · ${c.player.air.toFixed(1)} s`; }
     else pill.hidden = true;
     $('cBrake').classList.toggle('on', c.brake);
-    $('cWheel').lastChild.style.transform = `translateX(${(c.wheel * 54).toFixed(1)}px)`; // the gold marker slides L to R with the steering
+    $('cWheel').lastChild.style.left = `calc(${(50 + c.wheel * 36).toFixed(1)}% - 9px)`; // the gold marker slides L to R with the steering
     $('chase').querySelector('.steer.l').classList.toggle('on', c.steer < 0);
     $('chase').querySelector('.steer.r').classList.toggle('on', c.steer > 0);
     return onScreen;
