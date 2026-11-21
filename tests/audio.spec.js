@@ -1,5 +1,5 @@
 // Sound (src/audio.js): nothing plays before the first tap; after it the engine note follows the red
-// car's speed, braking squeals, crests thump on landing, footsteps tick on stone, a wrong accusation
+// car's speed, braking scrubs the tyres, the piano jazz stops while driving and plays on foot, crests thump on landing, footsteps tick on stone, a wrong accusation
 // plays the Heat sting and buttons click, all within the live audio node budget and with no page
 // errors. The mute button on the pause screen silences it and is remembered after a reload.
 const { test, expect, chromium } = require('@playwright/test');
@@ -57,12 +57,14 @@ test('the chase and the walk make sound within the node budget', async ({ page }
     A.act('walkTo', ...A.PLACES.find((p) => p.id === 'calzaiuoli').at, true); // a long walk south down the street
     for (let i = 0; i < 120; i++) { A.step(1 / 30); if (i % 5 === 0) await new Promise((r) => setTimeout(r, 20)); }
     const steps = S.played.step;
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); const bed = S.bed; // the jazz plays on foot too
     const wrong = A.case.suspects.find((s) => !s.thief);
     A.act('accuse', wrong.id); A.step(1 / 30);
     document.querySelector('#touch button').click();
-    return { steps, sting: S.played.sting, tick: S.played.tick, peak: S.peak, heat: A.case.heat };
+    return { steps, bed, sting: S.played.sting, tick: S.played.tick, peak: S.peak, heat: A.case.heat };
   });
   expect(f.steps, 'footsteps while walking').toBeGreaterThan(3);
+  expect(f.bed, 'piano jazz in Florence').toBe(true);
   expect(f.heat).toBe(1);
   expect(f.sting, 'Heat rose: one sting').toBe(1);
   expect(f.tick).toBeGreaterThan(0);
