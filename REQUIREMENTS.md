@@ -40,6 +40,7 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 | R21 | Opening car chase (Hitoshi's request, 2026-11-20, mockup docs/mockups/tuscany-chase.jpg): the game opens in Tuscany. In an original little red two-door you follow a black off-roader from Pienza through Val d'Orcia (cypress avenues, rolling hills), along the Siena road and through the Chianti hills to Florence. Since 2026-11-21: one drive of about 45 s out of Pienza on a road generated fresh every run, won early by keeping him in sight for 30 s in a row or catching right up behind him; a steering slider at the bottom middle (Brake at the bottom right); going off the road only slows you a little. Pure driving: hold the left or right half of the screen to steer (keys: ← → or A D, Space / ↓ / S to brake), the car speeds up by itself, and brake lights glow while braking. Both cars top out near 140 km/h; yours is nimbler in bends and his is faster on straights. Air time over crests, two-way traffic, a speedometer, and a gold distance tag over his car. Keep him in sight: a meter drains while he is hidden and the drive restarts when it empties. Skip to Florence at any time; then the case starts on foot. | Done (#24, #25, #27, #31, #34) |
 | R22 | Feedback sends session context (Hitoshi's choice, 2026-11-21): the game keeps a small event log in memory only (no network, no storage, no analytics), and the Feedback issue's Game context adds the mode and chase stage, time in case, clues found of total, accusations, Heat, chase retries, time since the last new clue and the last 10 events, in a link short enough for GitHub. | Done (#40) |
 | R23 | Pacing targets (Hitoshi's choices, 2026-11-21), measured by the AI playtester (W18) and shown as met or missed, not enforced yet: a case takes 10–15 minutes for a novice (median); the longest stretch with nothing new is 45 s or less (novice median); a novice clears the chase within 2 tries in 80% of seeds; a novice gets 60–80% of Case 02 seal questions right on the first try. Enforcing them in CI is a later task. | Measured, not enforced (#35) |
+| R24 | Original sound made in code with Web Audio, no audio files and nothing imitating a known film or game theme (Hitoshi's choice from the repo review, 2026-11-21). Mood "Tuscan Noir": plucked strings and a low bowed drone. The red car's engine note follows its speed and gear shifts, gravel rumbles off the road, the brakes squeal, crests thump on landing and crashes crunch; footsteps on stone (quicker when running); a short sting when Heat rises; a wooden click on every button; a quiet music bed only on the title, the case file and the chase cards. Sound starts after the first tap or key; 🔊 Sound on/off on the pause screen is remembered on the phone; at most 64 live audio nodes (`tests/audio.spec.js`). | Done (#45) |
 
 ### How we work
 
@@ -77,7 +78,6 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 
 | Date | Feedback / request from Hitoshi | Outcome |
 |---|---|---|
-| 2026-11-16 | Played The Dossier: "feels slow with a lot of aimless walking"; wants running, a hint or direction to witnesses and objects, and a map of the game world; open to other ideas. Cards: "Double-tap to run", "Edge arrows with distance", "Corner minimap plus big map", "Handler's first lead". | Built in #12 (R6, R9, R19), issue #11. |
 | 2026-11-16 | Pacing mockup: "Don't show who the people are on the left screen but still show the direction and distance." | Arrows show only direction and distance (R19), #12. |
 | 2026-11-16 | "Always show options as selectable cards." "Always tell me who/what we are waiting on: me, you, or GitHub." | W16. |
 | 2026-11-19 | "Create a new separate case in the style of Da Vinci code with questions about world history, art history, military history, technology history, mechanical engineering and electrical engineering … mix up the formats … show sample questions/formats as screenshots first." | Original story (no characters or plot from the book); 8 sample screens, one per subject and format. R20, issue #15. |
@@ -97,6 +97,7 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 | 2026-11-21 | "To make GitHub deploy faster, is there anything that I need to change?" Chose "Do both fixes"; cards: 3 parallel jobs; split the deploy's tests too; main's comparison screenshots alongside; README.md only skips the browser tests. | W17: tests in 3 shards on PRs and deploys, README-only changes get lint only, the required check sums up the shards. PR #41. |
 | 2026-11-21 | Shared an analysis of how the repo uses agentic AI; asked for clarifying questions and tasks one by one. Recommendation 1, "Build it now, report only": an AI playtester; "Its own workflow" for CI. | Issue #35 filed as `ready`; W18, PR #42. |
 | 2026-11-21 | Pacing targets: case length for a novice 10–15 min; longest stretch with nothing new 45 s; chase cleared within 2 tries in 80% of seeds; novice seal first-try right 60–80%. "Set targets now, enforce later". | R23: the playtest summary shows each as met or missed; enforcing comes in a later task. PR #42. |
+| 2026-11-21 | Reviewed the repo analysis and chose its sound task, "Original sound, generated in code". Cards: "B, Tuscan Noir" of three code-made mood samples; "Quiet bed on title and case file". | R24, issue #36: engine, tyres, brake, landings, footsteps, Heat sting, button clicks and the quiet bed, with a mute button on the pause screen; #45. |
 
 ## 4. Open backlog
 
@@ -110,6 +111,7 @@ Add the `ready` label to an issue to start it.
 | – | Station chase when the thief gets away (R14, R15) | To file |
 | #15 | Case 02, The Compass Ledger: seals, question generators, fact bank (R20) | Done (#16, #19) |
 | #23 | Opening car chase, Pienza to Florence (R21) | Done (#24, #25, #27) |
+| #36 | Original sound, generated in code (R24) | In progress (#45) |
 | #37 | Feedback button sends session context (R22) | Done (#40) |
 | #35 | AI playtester: persona bots that play every mode (W18, R23) | In progress (PR #42) |
 
