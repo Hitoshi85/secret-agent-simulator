@@ -172,9 +172,11 @@ export function makeAudio() {
     const ctx = a.ctx, out = ctx.createGain(), t = ctx.currentTime; out.gain.value = 0; out.connect(master);
     out.gain.setTargetAtTime(1, t, 0.8);
     const nodes = [out], srcs = [];
-    if (a.variant === 'a') { // air: looped noise, very low and dark
-      const n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(); n.buffer = noise; n.loop = true; f.type = 'lowpass'; f.frequency.value = 380; g.gain.value = 0.05;
+    if (a.variant === 'a') { // air: soft city air in the band a phone speaker plays, and a low open fifth (F, C) under it
+      const n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(); n.buffer = noise; n.loop = true; f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 0.5; g.gain.value = 0.05;
       n.connect(f); f.connect(g); g.connect(out); n.start(); nodes.push(f, g); srcs.push(n);
+      const df = ctx.createBiquadFilter(), dg = ctx.createGain(); df.type = 'lowpass'; df.frequency.value = 1400; dg.gain.value = 0.03; df.connect(dg); dg.connect(out); nodes.push(df, dg);
+      for (const [m, dt] of [[53, -3], [60, 4]]) { const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = mtof(m); o.detune.value = dt; o.connect(df); o.start(); srcs.push(o); }
     } else if (a.variant === 'c') { // pad: detuned triangles on F, C, A, E through a slowly opening filter
       const f = ctx.createBiquadFilter(), lfo = ctx.createOscillator(), lg = ctx.createGain(), g = ctx.createGain();
       f.type = 'lowpass'; f.frequency.value = 600; f.Q.value = 0.7; lfo.frequency.value = 0.07; lg.gain.value = 350; g.gain.value = 0.035;
@@ -191,8 +193,8 @@ export function makeAudio() {
     setTimeout(() => { for (const s of b.srcs) try { s.stop(); } catch { /* already stopped */ } b.out.disconnect(); live(-k); }, 1500);
   }
   function scheduleBed(t) {
-    if (a.variant === 'a') { // a bell every 9 to 15 s
-      if (bed.bellAt < t + 0.2) { play(bell(bed.bar % 3 ? 196 : 174.6), bed.out, bed.bellAt, 0.05); bed.bar++; bed.bellAt += 9 + Math.random() * 6; }
+    if (a.variant === 'a') { // a distant bell every 6 to 10 s
+      if (bed.bellAt < t + 0.2) { play(bell(bed.bar % 3 ? 392 : 349.2), bed.out, bed.bellAt, 0.1); bed.bar++; bed.bellAt += 6 + Math.random() * 4; }
       return;
     }
     if (a.variant !== 'b') return;
