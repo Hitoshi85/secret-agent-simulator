@@ -219,8 +219,9 @@ const $id = (id) => document.getElementById(id);
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   if (!loop.paused) { step(dt); render(); }
-  // The quiet music bed: on the title, the case file and the chase cards only.
-  audio.bed(!$id('title').hidden || !$id('chaseCard').hidden || (!$id('casesheet').hidden && $id('caseBody').classList.contains('file')));
+  // The piano jazz bed plays everywhere but the drive itself, a little softer on foot in Florence.
+  const driving = state.state === 'chase' && chase && (chase.status === 'driving' || chase.status === 'count');
+  audio.bed(!driving, state.state === 'playing' && $id('title').hidden);
   requestAnimationFrame(frame);
 }
 cam.pitch = START.pitch; updateCamera(camera, agent, 0, 0, true);
