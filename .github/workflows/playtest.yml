@@ -1,0 +1,47 @@
+name: Playtest
+# The AI playtester (tests/playtest/): personas play every mode over 20 seeds and report pacing.
+# Report only: every step may fail without failing the job, so this never blocks a merge. The report
+# is the `playtest` artifact and the job summary.
+
+on:
+  pull_request:
+    paths: ['src/**', 'game.js']
+  workflow_dispatch:
+
+concurrency:
+  group: playtest-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  playtest:
+    name: AI playtest (report only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        continue-on-error: true
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+        continue-on-error: true
+      - name: Play 20 seeds per persona
+        timeout-minutes: 6
+        run: npm run playtest
+        continue-on-error: true
+      - name: Upload the playtest report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playtest
+          path: |
+            playtest/playtest-report.json
+            playtest/playtest-report.md
+          if-no-files-found: warn
+          retention-days: 14

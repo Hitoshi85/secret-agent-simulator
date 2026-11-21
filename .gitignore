@@ -4,3 +4,4 @@ playwright-report/
 phone-screenshots/
 _site-test/
 main-src/
+/playtest/
