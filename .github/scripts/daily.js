@@ -1,12 +1,17 @@
 // Daily backlog run for Secret Agent Simulator, run by .github/workflows/daily.yml through actions/github-script.
 //
-// Two jobs, both plain rules so they are cheap and unit-tested (tests/daily.spec.js):
+// Three jobs, all plain rules so they are cheap and unit-tested (tests/daily.spec.js):
 //   1. Veto window: a `proposed` task becomes `ready` once it has carried the `proposed` label for
 //      36 hours with no veto: no `hold` or `needs-yes` label and no "no" / "drop" comment from the
 //      owner. At most 3 tasks a day, oldest first. Big changes (controls, modes, the real-world route,
 //      prod) carry `needs-yes` and wait for the owner's yes.
-//   2. Friday report: on Fridays (New York time) it opens one `report` issue: shipped, proposed, blocked,
+//      A `visual` task also waits until its body links a mockup in docs/mockups/.
+//   2. Shipped issues: an open issue that a merged PR says it closes ("Closes #N") is closed with a
+//      comment. GitHub does not do it for the merge queue, whose merges use the built-in token.
+//   3. Friday report: on Fridays (New York time) it opens one `report` issue: shipped, proposed, blocked,
 //      play links and 4 numbers. The coordinator summarises it in the project chat.
+// The weekly proposals themselves are written by a scheduled Claude run on Fridays at 7:00 New York
+// time, before this run (docs/WORKFLOW.md, "Weekly proposal run").
 // Reviews are not done here: a daily scheduled Claude run reviews PRs half an hour earlier, at 7:00 New York time (docs/REVIEW.md).
 
 const PROPOSED = 'proposed';
@@ -16,6 +21,9 @@ const REPORT_LABEL = 'report';
 const WINDOW_HOURS = 36;
 const MAX_PER_DAY = 3;
 const PROMOTED_MARKER = '<!-- backlog: promoted -->';
+const CLOSED_MARKER = '<!-- backlog: closed-shipped -->';
+const VISUAL = 'visual';
+const MOCKUP_LINK = /docs\/mockups\//;
 const OWNER_ROLES = ['OWNER'];
 // A comment by the owner that starts with "no", "nope" or "drop" vetoes ("No thanks", "Drop it",
 // "drop #12"); "No problem" and "No worries" do not. A missed veto matters more than an extra one.
@@ -52,6 +60,7 @@ function vetoReason(issue, comments, since, now) {
   const no = (comments || []).find((c) => OWNER_ROLES.includes(c.author_association) &&
     !BOTS.includes(c.user && c.user.login) && !CLAUDE_FOOTER.test(c.body || '') && VETO_COMMENT.test(c.body || '') && !NOT_A_VETO.test(c.body || ''));
   if (no) return 'the owner said no';
+  if (labels.includes(VISUAL) && !MOCKUP_LINK.test(issue.body || '')) return 'visual task with no mockup in docs/mockups/';
   const hours = (now - since) / HOUR;
   if (hours < WINDOW_HOURS) return `in the veto window (${Math.floor(hours)} of ${WINDOW_HOURS} h)`;
   return null;
@@ -97,6 +106,50 @@ const isReportDay = (now) => localDay(now).weekday === 5;
 function closesIssue(body) {
   const m = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/i.exec(body || '');
   return m ? Number(m[1]) : null;
+}
+
+// Every issue number a PR closes ("Closes #12, closes #13", "Fixes #3").
+function closesIssues(body) {
+  const out = [];
+  for (const m of (body || '').matchAll(/\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/gi)) {
+    const n = Number(m[1]);
+    if (!out.includes(n)) out.push(n);
+  }
+  return out;
+}
+
+// Open issues that a merged PR says it closes: [{ issue, pr }], oldest PR first, each issue once.
+// `prs` is the closed PRs into main; `openIssues` the open issues (PRs among them are ignored).
+function shippedOpen(prs, openIssues) {
+  const open = new Set(openIssues.filter((i) => !i.pull_request).map((i) => i.number));
+  const out = [];
+  const merged = prs.filter((p) => p.merged_at).sort((a, b) => new Date(a.merged_at) - new Date(b.merged_at));
+  for (const pr of merged) {
+    for (const n of closesIssues(pr.body)) {
+      if (open.has(n) && n !== pr.number) { out.push({ issue: n, pr: pr.number }); open.delete(n); }
+    }
+  }
+  return out;
+}
+
+// One "Proposed" line per task proposed this week, or still waiting from an earlier week.
+// `items` is [{ issue, events }]: issues that carried the `proposed` label at some point.
+function proposalLines(items, weekStart) {
+  const lines = [];
+  for (const { issue, events } of [...items].sort((a, b) => a.issue.number - b.issue.number)) {
+    const labels = labelNames(issue);
+    const wasProposed = labels.includes(PROPOSED) || (events || []).some((e) => e.event === 'labeled' && e.label && e.label.name === PROPOSED);
+    if (!wasProposed || issue.pull_request) continue;
+    const thisWeek = new Date(proposedAt(issue, events)) > weekStart;
+    const waiting = issue.state === 'open' && labels.includes(PROPOSED);
+    if (!thisWeek && !waiting) continue;
+    let status;
+    if (issue.state !== 'open') status = issue.state_reason === 'not_planned' ? 'dropped' : 'closed';
+    else if (labels.includes(READY)) status = READY;
+    else status = [PROPOSED, ...labels.filter((l) => [...VETO_LABELS, VISUAL].includes(l))].join(', ');
+    lines.push(`#${issue.number} ${issue.title} (${status}${thisWeek ? '' : ', from an earlier week'})`);
+  }
+  return lines;
 }
 
 const playerFacing = (files) => (files || []).some((f) => PLAYER_FACING.some((re) => re.test(f.filename || f)));
@@ -145,10 +198,11 @@ const show = (v, unit = '') => (v === null || v === undefined ? 'n/a' : `${v}${u
 const list = (items, empty) => (items.length ? items.map((i) => `- ${i}`).join('\n') : `- ${empty}`);
 
 // The report issue body.
-function reportBody({ weekOf, shipped, proposed, blocked, links, numbers }) {
+function reportBody({ weekOf, shipped, closed = [], proposed, blocked, links, numbers }) {
   return [
     `Week to ${weekOf} (New York time). Written by the daily backlog run; the coordinator summarises it in the project chat.`,
     '', '## Shipped to dev', list(shipped, 'Nothing merged this week.'),
+    ...(closed.length ? ['', 'Issues closed because their PR merged:', list(closed, '')] : []),
     '', '## Proposed (becomes ready after 36 h unless vetoed: `hold`, "no" or "drop #N")', list(proposed, 'Nothing proposed.'),
     '', '## Blocked or waiting', list(blocked, 'Nothing blocked.'),
     '', '## Play links', links,
@@ -167,6 +221,7 @@ async function ensureLabels(github, owner, repo) {
     [PROPOSED]: ['c5def5', 'Proposed by Claude; becomes ready after 36 h unless vetoed'],
     'needs-yes': ['d93f0b', 'Big change (controls, modes, route, prod): waits for the owner\'s yes'],
     [REPORT_LABEL]: ['0e8a16', 'Weekly report'],
+    [VISUAL]: ['bfd4f2', 'Changes what players see: needs a phone-size mockup in docs/mockups/ before it turns ready'],
   };
   for (const [name, [color, description]] of Object.entries(want)) {
     try { await github.rest.issues.getLabel({ owner, repo, name }); } catch {
@@ -208,6 +263,23 @@ async function promote({ github, owner, repo, now, say }) {
   return { numbers, skipped };
 }
 
+async function closeShipped({ github, owner, repo, say }) {
+  const { data: prs } = await github.rest.pulls.list({
+    owner, repo, state: 'closed', base: 'main', sort: 'updated', direction: 'desc', per_page: 100,
+  });
+  const openIssues = await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: 'open', per_page: 100 });
+  const close = shippedOpen(prs, openIssues);
+  for (const { issue, pr } of close) {
+    await github.rest.issues.createComment({
+      owner, repo, issue_number: issue,
+      body: `Shipped in #${pr}, which merged, so this issue is closed. ${CLOSED_MARKER}`,
+    });
+    await github.rest.issues.update({ owner, repo, issue_number: issue, state: 'closed', state_reason: 'completed' });
+    say(`#${issue}: closed, shipped in #${pr}.`);
+  }
+  return close;
+}
+
 async function report({ github, owner, repo, now, say }) {
   const { date } = localDay(now);
   const title = `Weekly report, week to ${date}`;
@@ -244,9 +316,26 @@ async function report({ github, owner, repo, now, say }) {
   // REQUIREMENTS.md keeps the latest 20 rows; older ones move to the archive.
   const ownerMessages = feedbackRows(await read('REQUIREMENTS.md'), fromDate, date) +
     feedbackRows(await read('docs/feedback-archive.md'), fromDate, date);
-  const proposedIssues = await github.paginate(github.rest.issues.listForRepo, {
+  // This week's proposals (whatever became of them) and older ones still waiting.
+  const touched = await github.paginate(github.rest.issues.listForRepo, {
+    owner, repo, state: 'all', labels: 'task', since: weekStart.toISOString(), per_page: 100,
+  });
+  const waiting = await github.paginate(github.rest.issues.listForRepo, {
     owner, repo, state: 'open', labels: PROPOSED, per_page: 100,
   });
+  const seen = new Set(touched.map((i) => i.number));
+  const proposalItems = [];
+  const closedShipped = [];
+  for (const issue of [...touched, ...waiting.filter((i) => !seen.has(i.number))].filter((i) => !i.pull_request)) {
+    const events = await github.paginate(github.rest.issues.listEvents, { owner, repo, issue_number: issue.number, per_page: 100 });
+    proposalItems.push({ issue, events });
+    if (issue.state === 'closed' && new Date(issue.closed_at) > weekStart) {
+      const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number: issue.number, per_page: 100 });
+      const c = comments.find((x) => (x.body || '').includes(CLOSED_MARKER));
+      const pr = c && /#(\d+)/.exec(c.body);
+      if (pr) closedShipped.push(`#${issue.number} ${issue.title} (shipped in #${pr[1]})`);
+    }
+  }
   const openIssues = await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: 'open', per_page: 100 });
   const blocked = openIssues
     .filter((i) => labelNames(i).some((l) => ['hold', 'needs-yes', 'queue-conflict'].includes(l)))
@@ -254,7 +343,8 @@ async function report({ github, owner, repo, now, say }) {
   const body = reportBody({
     weekOf: date,
     shipped: merged.map((p) => `#${p.number} ${p.title}`),
-    proposed: proposedIssues.filter((i) => !i.pull_request).map((i) => `#${i.number} ${i.title}`),
+    closed: closedShipped,
+    proposed: proposalLines(proposalItems, weekStart),
     blocked,
     links: playLinks(await read('README.md')),
     numbers: metrics(merged, ownerMessages),
@@ -270,12 +360,13 @@ async function run({ github, context, core, now = new Date(), forceReport = fals
   const say = (msg) => { core.info(msg); lines.push(msg); };
   await ensureLabels(github, owner, repo);
   await promote({ github, owner, repo, now, say });
+  await closeShipped({ github, owner, repo, say });
   if (forceReport || isReportDay(now)) await report({ github, owner, repo, now, say });
   else say('Not Friday in New York: no weekly report today.');
   await core.summary.addHeading('Daily backlog run').addList(lines.length ? lines : ['Nothing to do.']).write();
 }
 
 module.exports = {
-  run, proposedAt, vetoReason, promotions, countPromoted, localDay, isReportDay, closesIssue, playerFacing,
-  metrics, feedbackRows, playLinks, reportBody, WINDOW_HOURS, MAX_PER_DAY, PROMOTED_MARKER,
+  run, proposedAt, vetoReason, promotions, countPromoted, localDay, isReportDay, closesIssue, closesIssues, shippedOpen,
+  proposalLines, playerFacing, metrics, feedbackRows, playLinks, reportBody, WINDOW_HOURS, MAX_PER_DAY, PROMOTED_MARKER, CLOSED_MARKER,
 };

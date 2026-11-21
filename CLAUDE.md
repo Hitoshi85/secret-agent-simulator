@@ -48,7 +48,9 @@ checked by `tests/phone-checks.spec.js` (250 draw calls, 400k triangles, 4 ms of
 
 1. Each task is a GitHub issue labelled `task` with a **Done when** list. Work only on that issue.
    Tasks Claude proposes get `proposed` (not `ready`); they turn `ready` after a 36-hour veto window
-   (`docs/WORKFLOW.md`). Mark ones that change controls, modes, real places or prod `needs-yes`.
+   (`docs/WORKFLOW.md`). Mark ones that change controls, modes, real places or prod `needs-yes`, and
+   ones that change what players see `visual` (they wait for a mockup in `docs/mockups/`). A weekly
+   Claude run proposes up to 3 tasks on Fridays (`docs/PROPOSALS.md`).
 2. Before building, ask the owner the task's clarifying questions as clickable cards (sent through
    the coordinator), one question at a time (Hitoshi's choice at kickoff), each with 3 options, the
    recommended one first and marked "(Recommended)". Ask about every change, small ones too; do not

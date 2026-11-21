@@ -2,14 +2,23 @@
 
 1. **Backlog with a veto window.** Work lives in GitHub Issues labelled `task`. Each has a goal and a
    **Done when** checklist. The owner files issues and approves them with the `ready` label, or
-   Claude proposes them with the `proposed` label (from the chat or a thread; the coordinator lists
-   new ones once a day). A `proposed` task becomes `ready` on its own after **36 hours** unless the
+   Claude proposes them with the `proposed` label (from the chat, a thread or the weekly proposal run
+   below; the coordinator lists new ones once a day). A `proposed` task becomes `ready` on its own after **36 hours** unless the
    owner vetoes it: a `hold` label, a comment starting with "no" or "drop", or "drop #N" in the
    project chat (the coordinator then closes it as not planned). At most 3 tasks are promoted a day,
    oldest first. Tasks that change controls, game modes, the real-world route or prod get
-   `needs-yes` and stay `proposed` until the owner says yes. The daily backlog run
+   `needs-yes` and stay `proposed` until the owner says yes. Tasks that change what players see get
+   `visual` and stay `proposed` until their body links a phone-size mockup in `docs/mockups/`. The daily backlog run
    (`.github/workflows/daily.yml`, 12:30 UTC, half an hour after the 7:00 New York review, rules in `.github/scripts/daily.js`, tested in
-   `tests/daily.spec.js`) does the promotion.
+   `tests/daily.spec.js`) does the promotion. It also closes every open issue that a merged PR says it
+   closes ("Closes #N"), with a comment naming the PR: GitHub does not do that for the merge queue,
+   whose merges use the built-in token. A task shipped by a PR without that line is closed by hand.
+   **Weekly proposal run.** Every Friday at 7:00 New York time a scheduled Claude task ("Secret Agent
+   Simulator weekly task proposals") files up to 3 `proposed` tasks (Hitoshi's choice, 2026-11-21).
+   Inputs: `REQUIREMENTS.md` (Planned items, "To file" rows, Ideas), the latest playtest report
+   (`npm run playtest`, R23 targets missed) and open feedback. Each task has a Goal, a Done when list,
+   a Size and the requirement it serves, and gets `needs-yes` or `visual` by the rules above. The
+   Friday report half an hour later lists them under **Proposed**. Full steps: `docs/PROPOSALS.md`.
 2. **One thread per issue.** Claude picks up a `ready` issue, branches from `main`, implements it,
    runs `npm run check`, and opens a PR with `Closes #N`. Independent issues run in parallel.
 3. **CI gate.** `.github/workflows/ci.yml` runs on every PR: ESLint, then headless Chromium tests
@@ -51,7 +60,8 @@
 6. **Daily review and Friday report.** A scheduled Claude task reviews every unreviewed PR once a day
    at 7:00 New York time and marks big `proposed` tasks `needs-yes` (see docs/REVIEW.md). On Fridays the
    daily backlog run also opens a `report` issue, "Weekly report, week to <date>": what shipped to dev,
-   what is proposed, what is blocked or waiting (`hold`, `needs-yes`, `queue-conflict`), the current
+   issues closed because their PR merged, the week's proposals (and what became of each: ready,
+   still proposed, dropped) plus older ones still waiting, what is blocked or waiting (`hold`, `needs-yes`, `queue-conflict`), the current
    play links, and four numbers: Hitoshi's messages per shipped PR (rows in the REQUIREMENTS.md
    feedback log), PRs merged by the queue with no "m", median lead time from `ready` to dev, and the
    share of PRs that change what players see or hear. The coordinator summarises it in the chat. Run
@@ -69,4 +79,4 @@
   rebases branches, merges and starts workflows with the built-in token).
 - Settings → General → Pull Requests: tick **Automatically delete head branches** (optional).
 - Create labels `task`, `ready`, `feedback`, `hold`, `automerge`, `queue-conflict` (the daily run adds
-  `proposed`, `needs-yes` and `report` itself).
+  `proposed`, `needs-yes`, `visual` and `report` itself).
