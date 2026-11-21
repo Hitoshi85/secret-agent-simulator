@@ -59,7 +59,7 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 | W14 | Use several focused subagents in parallel for independent parts of a task only when it pays off, keeping token use balanced. | Preference |
 | W15 | Show results (e.g. test runs) in simple tables when asked. | Preference |
 | W16 | Every update says what the work is waiting on: Hitoshi, Claude or GitHub (Hitoshi's rule, 2026-11-16). Options always come as selectable cards. | In place |
-| W17 | Fast CI: the Playwright tests run in 3 parallel shards on PRs and before each deploy; changes to README.md alone skip the browser tests (lint and the requirements check still run); main's comparison screenshots run beside the tests. The required check stays **Lint and smoke test** (Hitoshi's choices, 2026-11-21). | In place (#PRNUM) |
+| W17 | Fast CI: the Playwright tests run in 3 parallel shards on PRs and before each deploy; changes to README.md alone skip the browser tests (lint and the requirements check still run); main's comparison screenshots run beside the tests. The required check stays **Lint and smoke test** (Hitoshi's choices, 2026-11-21). | In place (#41) |
 
 ## 2. Shipped changes
 
@@ -93,7 +93,7 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 | 2026-11-20 | "Make car chase easier or be more lenient with out of sight / gap. Less air time." Cards: much easier; short hops. | R21: 12 s out of sight (was 6), seen up to 400 m (was 260), the meter refills twice as fast, he waits more when far ahead; crests give at most about half a second of air (was up to 1.7 s), and the cars no longer take off at the start of a stage. PR #31. |
 | 2026-11-21 | "Shorter car chase (1/4 of the length)", "Move on if user keeps the car in sight for a distance or actually catches up", "Different route each time". Cards: 30 s in sight in a row, or catching right up; random roads every run. | R21: one drive of about 45 s (1.5 km) out of Pienza, a new road and traffic every run, won early by 30 s in sight or catching up. PR #34. |
 | 2026-11-21 | "Less speed penalty for being off road", "Show wheel direction because physics don't seem to line up", then "a different indicator of wheel direction on bottom of screen" and mockups of each. Cards: light slowdown; steering indicator (slider bar centred at the bottom, Brake at the bottom right; docs/mockups/chase-steer.jpg). | R21: off the road tops out near 115 km/h (was 61); a steering slider centred at the bottom and Brake moved to the bottom right. The heading was checked and matches the steering (a test now checks it). PR #34. |
-| 2026-11-21 | "To make GitHub deploy faster, is there anything that I need to change?" Chose "Do both fixes"; cards: 3 parallel jobs; split the deploy's tests too; main's comparison screenshots alongside; README.md only skips the browser tests. | W17: tests in 3 shards on PRs and deploys, README-only changes get lint only, the required check sums up the shards. PR #PRNUM. |
+| 2026-11-21 | "To make GitHub deploy faster, is there anything that I need to change?" Chose "Do both fixes"; cards: 3 parallel jobs; split the deploy's tests too; main's comparison screenshots alongside; README.md only skips the browser tests. | W17: tests in 3 shards on PRs and deploys, README-only changes get lint only, the required check sums up the shards. PR #41. |
 
 ## 4. Open backlog
 
