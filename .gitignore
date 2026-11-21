@@ -4,5 +4,6 @@ playwright-report/
 phone-screenshots/
 _site-test/
 main-src/
+/playtest/
 # Python wheels (downloaded tools, never part of the game)
 *.whl

@@ -6,7 +6,8 @@
     "lint": "eslint .",
     "test": "playwright test",
     "check": "npm run lint && npm test",
-    "serve": "node tests/serve.js"
+    "serve": "node tests/serve.js",
+    "playtest": "node tests/playtest/run.js"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
