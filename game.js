@@ -219,9 +219,9 @@ const $id = (id) => document.getElementById(id);
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   if (!loop.paused) { step(dt); render(); }
-  // The piano jazz bed plays everywhere but the drive itself, a little softer on foot in Florence.
+  // The piano jazz plays all the time: full on the title and the cards, softer under the car and on foot.
   const driving = state.state === 'chase' && chase && (chase.status === 'driving' || chase.status === 'count');
-  audio.bed(!driving, state.state === 'playing' && $id('title').hidden);
+  audio.bed(true, driving ? 0.55 : state.state === 'playing' && $id('title').hidden ? 0.7 : 1);
   requestAnimationFrame(frame);
 }
 cam.pitch = START.pitch; updateCamera(camera, agent, 0, 0, true);

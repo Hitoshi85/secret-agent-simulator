@@ -1,5 +1,5 @@
 // Sound (src/audio.js): nothing plays before the first tap; after it the engine note follows the red
-// car's speed, braking scrubs the tyres, the piano jazz stops while driving and plays on foot, crests thump on landing, footsteps tick on stone, a wrong accusation
+// car's speed, braking scrubs the tyres, the piano jazz plays throughout (softer under the car), crests thump on landing, footsteps tick on stone, a wrong accusation
 // plays the Heat sting and buttons click, all within the live audio node budget and with no page
 // errors. The mute button on the pause screen silences it and is remembered after a reload.
 const { test, expect, chromium } = require('@playwright/test');
@@ -34,7 +34,7 @@ test('the chase and the walk make sound within the node budget', async ({ page }
       if (p.landed) landings++;
       if (i % 15 === 0) hz.push([p.v, S.engineHz]); // speed and engine note through the drive
       if (i === 420) squeal.push(S.squeal);
-      if (i === 200) { await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); bed = S.bed; } // each frame turns the bed off while driving
+      if (i === 200) { await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); bed = [S.bed, S.bedLevel]; } // the jazz keeps playing under the car, softer
       if (i % 10 === 0) await new Promise((r) => setTimeout(r, 20)); // real time passes too, so one-shot voices end
     }
     C.input.keys.brake = false;
@@ -47,7 +47,8 @@ test('the chase and the walk make sound within the node budget', async ({ page }
   expect(r.landings, 'the car left the ground').toBeGreaterThan(0);
   expect(r.land, 'a thump on every landing').toBe(r.landings);
   expect(r.peak).toBeLessThanOrEqual(MAX);
-  expect(r.bed, 'no music bed while driving').toBe(false);
+  expect(r.bed[0], 'piano jazz while driving').toBe(true);
+  expect(r.bed[1], 'softer under the car').toBeLessThan(1);
 
   // On foot: footsteps on stone, the Heat sting on a wrong accusation, and a click on buttons.
   const f = await page.evaluate(async () => {
