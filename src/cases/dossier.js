@@ -21,8 +21,9 @@ export default {
   // Phase one's thread (Hitoshi, 2026-11-21): someone else paid for the theft. Shown on the win card.
   epilogue: [
     'Inside: this month\'s schedule for the city\'s fresco restorers, who works where and when. The thief was paid in cash by someone they never met.',
-    '<b>Handler:</b> “Paid by a stranger, like the dealer out of Pienza. Someone is behind all of this.”',
   ],
+  // The handler's sign-off on the win and loss cards (Hitoshi, 2026-11-21): the same line in every case.
+  signoff: 'Pienza, and now this. Someone is behind all of it.',
   tasks: ['Talk to witnesses around the city', 'Look for traces they left', 'Accuse in the crowd. Each wrong guess raises Heat'],
 
   // What tells the suspects apart. Each value says how it looks on a person (see randomLook).

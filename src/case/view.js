@@ -2,6 +2,7 @@
 // and the case file, talk card, notebook, phone puzzle and endings. The rules are in engine.js.
 import * as THREE from 'three';
 import { makeFigure, randomLook, setPose } from '../people/figure.js';
+import { lookPortrait, portraitURL, handlerHTML, BUST, FACE } from '../people/portrait.js';
 import { newCase, learn, pickUp, crack, accuse, describe, suspectLook } from './engine.js';
 
 const $ = (id) => document.getElementById(id);
@@ -16,9 +17,10 @@ export function makeCaseView({ scene, crowd, def, random = Math.random }) {
   // Witnesses and traces stay put; build them once.
   for (const clue of def.clues) {
     const [x, z] = clue.at;
-    let mesh;
+    let mesh, look = null;
     if (clue.kind === 'witness') {
-      mesh = makeFigure(randomLook({ ...clue.look, scale: 1 }));
+      look = randomLook({ ...clue.look, scale: 1 });
+      mesh = makeFigure(look);
       mesh.rotation.y = Math.atan2(-clue.face[0], -clue.face[1]); setPose(mesh, 0.25);
     } else {
       mesh = new THREE.Mesh(new THREE.BoxGeometry(clue.kind === 'gadget' ? 0.09 : 0.12, 0.02, clue.kind === 'gadget' ? 0.17 : 0.2),
@@ -29,7 +31,7 @@ export function makeCaseView({ scene, crowd, def, random = Math.random }) {
     const ring = new THREE.Mesh(RING_GEO, RING_MAT);
     ring.rotation.x = -Math.PI / 2; ring.position.set(x, 0.035, z);
     v.group.add(mesh, ring);
-    v.targets.push({ kind: clue.kind, id: clue.id, mesh, ring, at: clue.at });
+    v.targets.push({ kind: clue.kind, id: clue.id, mesh, ring, at: clue.at, look });
   }
 
   // A new case: a fresh thief and suspects, every clue back in place.
@@ -39,13 +41,13 @@ export function makeCaseView({ scene, crowd, def, random = Math.random }) {
     v.c = newCase(def, random);
     for (const t of v.targets) { t.mesh.visible = true; t.ring.visible = true; }
     for (const s of v.c.suspects) {
-      const mesh = makeFigure(randomLook({ ...suspectLook(def, s), scale: 1 }));
+      const look = randomLook({ ...suspectLook(def, s), scale: 1 }), mesh = makeFigure(look);
       const [hx, hz] = s.haunt.at;
       mesh.position.set(hx + (random() - 0.5) * 6, 0, hz + (random() - 0.5) * 6);
       scene.add(mesh);
       const person = { mesh, target: null, speed: 1.1, wait: random() * 3, phase: random(), home: s.haunt.at, range: s.haunt.range };
       crowd.push(person); v.suspectPeople.push(person);
-      v.targets.push({ kind: 'suspect', id: s.id, mesh });
+      v.targets.push({ kind: 'suspect', id: s.id, mesh, look });
     }
     hud();
   };
@@ -74,12 +76,19 @@ export function makeCaseView({ scene, crowd, def, random = Math.random }) {
     if (t.kind === 'trace') { t.mesh.visible = false; t.ring.visible = false; }
     const crossed = c.suspects.filter((s) => s.out).length - before;
     const note = r.fresh ? `Added to your notebook: ${esc(c.notes[c.notes.length - 1])}.${crossed ? ` ${crossed} suspect${crossed > 1 ? 's' : ''} crossed out.` : ''}` : 'Already in your notebook.';
-    talk(r.clue.who ? `Witness · ${r.clue.who}` : `Trace · ${r.clue.what}`, r.text, note);
+    talk(r.clue.who ? `Witness · ${r.clue.who}` : `Trace · ${r.clue.what}`, r.text, note, t.look);
     return 'learned';
   };
 
-  function talk(label, text, note) {
-    $('talkWho').textContent = label;
+  // A witness gets a painted portrait above the card, drawn from the same look as in the street.
+  function talk(label, text, note, look) {
+    const [kind, ...name] = label.split(' · ');
+    $('talk').classList.toggle('face', !!look);
+    $('talkPor').hidden = !look;
+    if (look) $('talkPor').src = portraitURL(lookPortrait(look), BUST);
+    $('talkWho').textContent = look ? kind : label;
+    $('talkName').textContent = look ? name.join(' · ') : '';
+    $('talkName').hidden = !look;
     $('talkText').innerHTML = text;
     $('talkNote').innerHTML = note || '';
     $('talkNote').hidden = !note;
@@ -98,7 +107,7 @@ export function makeCaseView({ scene, crowd, def, random = Math.random }) {
     <button type="button" data-case="briefed">Take the case</button>`, 'file');
 
   // Your handler's first lead: shown when you take the case, and again from the Phone.
-  v.handler = () => open(`<p class="kicker">Phone · Handler</p>${(def.handler || []).map((m) => `<p class="msg">${m}</p>`).join('')}
+  v.handler = () => open(`<p class="kicker">Phone · Handler</p>${handlerHTML(def.handler || [])}
     <p class="small">The places are marked with gold arrows and on your map.</p>
     <button type="button" class="close" data-case="close">Got it</button>`, 'gadget');
 
@@ -107,9 +116,9 @@ export function makeCaseView({ scene, crowd, def, random = Math.random }) {
 
   v.notebook = () => {
     const c = v.c;
-    const fig = (s) => {
-      const L = suspectLook(def, s);
-      return `<span class="fig">${L.hat ? `<i class="hat" style="background:${L.hat}"></i>` : ''}<i class="hd"></i><i class="bd" style="background:${L.top}"></i>${L.bag ? `<i class="bg" style="background:${L.bag}"></i>` : ''}<i class="lg"></i></span>`;
+    const fig = (s) => { // the suspect's painted face, from the look they wear in the crowd
+      const t = v.targets.find((k) => k.kind === 'suspect' && k.id === s.id);
+      return `<img class="face" alt="" src="${portraitURL(lookPortrait(t.look), FACE)}">`;
     };
     const cards = c.suspects.map((s) => {
       const [first, ...rest] = describe(def, s).split(', ');
@@ -143,11 +152,11 @@ export function makeCaseView({ scene, crowd, def, random = Math.random }) {
     const c = v.c, wrong = c.heat;
     open(won
       ? `<p class="kicker">Case ${esc(def.number)} closed</p><h2>Dossier recovered</h2>
-        <p>The thief (${esc(describe(def, c.suspects[c.thief]).toLowerCase())}) hands it over without a scene.</p>${(def.epilogue || []).map((m) => `<p class="msg">${m}</p>`).join('')}
+        <p>The thief (${esc(describe(def, c.suspects[c.thief]).toLowerCase())}) hands it over without a scene.</p>${(def.epilogue || []).map((m) => `<p class="msg">${m}</p>`).join('')}${def.signoff ? `<p class="msg"><b>Handler:</b> “${def.signoff}”</p>` : ''}
         <p>Clues found: ${c.found.length} of ${def.clues.length} · wrong accusations: ${wrong}</p>
         <button type="button" data-case="again">Play again (new thief)</button>`
       : `<p class="kicker">Heat is full</p><h2>The thief got away</h2>
-        <p>Too many wrong accusations. The thief (${esc(describe(def, c.suspects[c.thief]).toLowerCase())}) noticed you and left for the ${esc(def.train)} at Santa Maria Novella.</p>
+        <p>Too many wrong accusations. The thief (${esc(describe(def, c.suspects[c.thief]).toLowerCase())}) noticed you and left for the ${esc(def.train)} at Santa Maria Novella.</p>${def.signoff ? `<p class="msg"><b>Handler:</b> “${def.signoff}”</p>` : ''}
         <p class="small">Chasing them at the station comes in a later build.</p>
         <button type="button" data-case="again">Try again (new thief)</button>`, 'end');
   }

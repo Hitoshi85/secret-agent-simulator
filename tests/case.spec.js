@@ -93,7 +93,9 @@ test('walk up to a witness, crack the phone, and the notebook keeps track', asyn
   expect(r.notes, 'the vague clue is noted').toBe(1);
   expect(r.out, 'but crosses no one out').toBe(0);
   await expect(page.locator('#talk')).toBeVisible();
-  await expect(page.locator('#talkWho')).toHaveText('Witness · Flower seller');
+  await expect(page.locator('#talkWho')).toHaveText('Witness');
+  await expect(page.locator('#talkName')).toHaveText('Flower seller');
+  await expect(page.locator('#talkPor')).toBeVisible();
 
   // The phone: pick it up, get the order wrong once, then right.
   await page.evaluate(() => { const A = window.__agent; A.act('jump', 'ponte'); A.agent.x = -140; A.agent.z = 592; A.act('interact', 'gadget', 'phone'); A.act('phone'); });
@@ -120,6 +122,7 @@ test('wrong accusations raise Heat until the thief gets away; the right one wins
   expect(lost).toEqual(['wrong', 'wrong', 'lost']);
   await expect(page.locator('#heatN')).toHaveText('3 / 3');
   await expect(page.locator('#caseBody h2')).toHaveText('The thief got away');
+  await expect(page.locator('#caseBody')).toContainText('Someone is behind all of it'); // the handler's sign-off on a loss too
   await page.locator('#caseBody button', { hasText: 'Try again' }).click();
   await expect(page.locator('#heatN')).toHaveText('0 / 3');
   const won = await page.evaluate(() => { const A = window.__agent; A.act('close'); return A.act('accuse', A.case.thief); });

@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { newSealCase, openSeal, answer, letters, guess, canGuess, brokenCount, claim } from './seals.js';
 import { lamps, isComplete } from './quiz.js';
+import { handlerHTML } from '../people/portrait.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
@@ -64,7 +65,7 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
     <h1>${esc(def.title)}</h1>${def.briefing.map((p) => `<p>${p}</p>`).join('')}
     <ul>${def.tasks.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
     <button type="button" data-case="briefed">Take the case</button>`, 'file');
-  v.handler = () => open(`<p class="kicker">Phone · Handler</p>${def.handler.map((m) => `<p class="msg">${m}</p>`).join('')}
+  v.handler = () => open(`<p class="kicker">Phone · Handler</p>${handlerHTML(def.handler)}
     <button type="button" class="close" data-case="close">Got it</button>`, 'gadget');
   v.phone = () => { v.handler(); return true; }; v.accuse = () => null; v.dot = () => null;
 
@@ -190,9 +191,9 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
   function ending() {
     const c = v.c, won = c.status === 'won';
     open(won
-      ? `<p class="kicker">Case ${esc(def.number)} closed</p><h2>The ledger is yours</h2><p>Under ${esc(c.word.place)}, wrapped in oilcloth: the guild's ledger of inventions, safe from the rivals.</p>${(def.epilogue || []).map((m) => `<p class="msg">${m}</p>`).join('')}
+      ? `<p class="kicker">Case ${esc(def.number)} closed</p><h2>The ledger is yours</h2><p>Under ${esc(c.word.place)}, wrapped in oilcloth: the guild's ledger of inventions, safe from the rivals.</p>${(def.epilogue || []).map((m) => `<p class="msg">${m}</p>`).join('')}${def.signoff ? `<p class="msg"><b>Handler:</b> “${def.signoff}”</p>` : ''}
         <p>Seals broken: ${brokenCount(c)} of ${c.seals.length} · Heat: ${c.heat} / ${def.maxHeat}</p><button type="button" data-case="again">Play again (new questions)</button>`
-      : `<p class="kicker">Heat is full</p><h2>The rivals got there first</h2><p>Too many wrong answers. The dealer's people found the ledger at ${esc(c.word.place)} (the word was ${c.word.word}). By morning there is only ash in the oilcloth.</p>
+      : `<p class="kicker">Heat is full</p><h2>The rivals got there first</h2><p>Too many wrong answers. The dealer's people found the ledger at ${esc(c.word.place)} (the word was ${c.word.word}). By morning there is only ash in the oilcloth.</p>${def.signoff ? `<p class="msg"><b>Handler:</b> “${def.signoff}”</p>` : ''}
         <button type="button" data-case="again">Try again (new questions)</button>`, 'end');
   }
 

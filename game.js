@@ -9,6 +9,7 @@ import { makeRenderer, makeScene } from './src/scene.js';
 import { makeCamera, fitCamera, updateCamera, cam, PITCH } from './src/camera.js';
 import { makeAgent, updateAgent, walkTo, teleport } from './src/agent.js';
 import { makeCrowd, updateCrowd } from './src/people/crowd.js';
+import { FACE_ATLAS } from './src/people/figure.js';
 import { setupUI, showLocation, toast, show } from './src/ui.js';
 import { pickCase } from './src/cases/index.js';
 import { makeCaseView } from './src/case/view.js';
@@ -234,5 +235,5 @@ window.__agent = {
   get case() { return caseView?.c; }, get caseView() { return caseView; }, get navaids() { return navaids; }, get caseId() { return def.id; }, audio, get chase() { return chase; },
   get paused() { return loop.paused; }, set paused(v) { loop.paused = v; last = performance.now(); },
   setPaused(v) { if (!!v !== state.paused) act('pause'); },
-  sessionLog, walkable, findPath, areaAt, version: VERSION,
+  sessionLog, walkable, findPath, areaAt, version: VERSION, faces: FACE_ATLAS,
 };

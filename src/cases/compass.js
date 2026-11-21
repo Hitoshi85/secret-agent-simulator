@@ -104,9 +104,10 @@ export default {
   ],
   // Phase one's thread (Hitoshi, 2026-11-21): the dealer was never the buyer. Shown on the win card.
   epilogue: [
-    'In the ledger\'s cover, a note in the dealer\'s hand: “Not for sale. He wants it burned.” The dealer was never the buyer. Someone else wanted this ledger gone.',
-    '<b>Handler:</b> “The dealer was working for someone. Find out who.”',
+    'In the ledger\'s cover, a note in the dealer\'s hand: “Not for sale. Someone else wanted it gone.” The dealer was never the buyer.',
   ],
+  // The handler's sign-off on the win and loss cards (Hitoshi, 2026-11-21): the same line in every case.
+  signoff: 'Pienza, and now this. Someone is behind all of it.',
   maxHeat: 3,
   guessAt: 4, // seals broken before the word may be guessed (Hitoshi's choice)
   subjects: [
