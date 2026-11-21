@@ -152,11 +152,11 @@ export function makeCaseView({ scene, crowd, def, random = Math.random }) {
     const c = v.c, wrong = c.heat;
     open(won
       ? `<p class="kicker">Case ${esc(def.number)} closed</p><h2>Dossier recovered</h2>
-        <p>The thief (${esc(describe(def, c.suspects[c.thief]).toLowerCase())}) hands it over without a scene.</p>
+        <p>The thief (${esc(describe(def, c.suspects[c.thief]).toLowerCase())}) hands it over without a scene.</p>${(def.epilogue || []).map((m) => `<p class="msg">${m}</p>`).join('')}${def.signoff ? `<p class="msg"><b>Handler:</b> “${def.signoff}”</p>` : ''}
         <p>Clues found: ${c.found.length} of ${def.clues.length} · wrong accusations: ${wrong}</p>
         <button type="button" data-case="again">Play again (new thief)</button>`
       : `<p class="kicker">Heat is full</p><h2>The thief got away</h2>
-        <p>Too many wrong accusations. The thief (${esc(describe(def, c.suspects[c.thief]).toLowerCase())}) noticed you and left for the ${esc(def.train)} at Santa Maria Novella.</p>
+        <p>Too many wrong accusations. The thief (${esc(describe(def, c.suspects[c.thief]).toLowerCase())}) noticed you and left for the ${esc(def.train)} at Santa Maria Novella.</p>${def.signoff ? `<p class="msg"><b>Handler:</b> “${def.signoff}”</p>` : ''}
         <p class="small">Chasing them at the station comes in a later build.</p>
         <button type="button" data-case="again">Try again (new thief)</button>`, 'end');
   }

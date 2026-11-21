@@ -93,14 +93,21 @@ export default {
   time: '09:10',
   briefing: [
     'Last night a restorer cleaning an old altarpiece found a compass and set-square scratched under the varnish, beside six tiny seals.',
-    'They are the mark of the <b>Compagnia del Compasso</b>, a secret guild of Renaissance engineers. Its lost ledger of inventions is hidden somewhere in the city, and a rival collector\'s people are already hunting it.',
+    'They are the mark of the <b>Compagnia del Compasso</b>, a secret guild of Renaissance engineers. Its lost ledger of inventions is hidden somewhere in the city, and a dealer\'s people are already hunting it. Someone is paying them very well.',
     '<b>Your job:</b> break the six seals before they do.',
   ],
   tasks: ['Six seals wait at landmarks: open them in any order', 'Each seal gives one letter of a hidden word', 'Wrong answers raise Heat: the rivals close in', 'Questions and places change every play'],
   handler: [
     'The guild\'s seals are cut into stone around the centre. The gold arrows point to every one you haven\'t broken.',
     'Your Notebook keeps the seal board. Break four and you may guess the hidden word.',
+    'The dealer\'s people are in the piazzas. They talk like buyers, but buyers don\'t carry lighter fluid.',
   ],
+  // Phase one's thread (Hitoshi, 2026-11-21): the dealer was never the buyer. Shown on the win card.
+  epilogue: [
+    'In the ledger\'s cover, a note in the dealer\'s hand: “Not for sale. Someone else wanted it gone.” The dealer was never the buyer.',
+  ],
+  // The handler's sign-off on the win and loss cards (Hitoshi, 2026-11-21): the same line in every case.
+  signoff: 'Pienza, and now this. Someone is behind all of it.',
   maxHeat: 3,
   guessAt: 4, // seals broken before the word may be guessed (Hitoshi's choice)
   subjects: [

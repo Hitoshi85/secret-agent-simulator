@@ -122,10 +122,12 @@ test('wrong accusations raise Heat until the thief gets away; the right one wins
   expect(lost).toEqual(['wrong', 'wrong', 'lost']);
   await expect(page.locator('#heatN')).toHaveText('3 / 3');
   await expect(page.locator('#caseBody h2')).toHaveText('The thief got away');
+  await expect(page.locator('#caseBody')).toContainText('Someone is behind all of it'); // the handler's sign-off on a loss too
   await page.locator('#caseBody button', { hasText: 'Try again' }).click();
   await expect(page.locator('#heatN')).toHaveText('0 / 3');
   const won = await page.evaluate(() => { const A = window.__agent; A.act('close'); return A.act('accuse', A.case.thief); });
   expect(won).toBe('right');
   await expect(page.locator('#caseBody h2')).toHaveText('Dossier recovered');
+  await expect(page.locator('#caseBody')).toContainText('paid in cash by someone they never met'); // phase one's villain thread
   expect(errors).toEqual([]);
 });

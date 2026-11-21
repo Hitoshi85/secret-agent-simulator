@@ -191,9 +191,9 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
   function ending() {
     const c = v.c, won = c.status === 'won';
     open(won
-      ? `<p class="kicker">Case ${esc(def.number)} closed</p><h2>The ledger is yours</h2><p>Under ${esc(c.word.place)}, wrapped in oilcloth: the guild's ledger of inventions, safe from the rivals.</p>
+      ? `<p class="kicker">Case ${esc(def.number)} closed</p><h2>The ledger is yours</h2><p>Under ${esc(c.word.place)}, wrapped in oilcloth: the guild's ledger of inventions, safe from the rivals.</p>${(def.epilogue || []).map((m) => `<p class="msg">${m}</p>`).join('')}${def.signoff ? `<p class="msg"><b>Handler:</b> “${def.signoff}”</p>` : ''}
         <p>Seals broken: ${brokenCount(c)} of ${c.seals.length} · Heat: ${c.heat} / ${def.maxHeat}</p><button type="button" data-case="again">Play again (new questions)</button>`
-      : `<p class="kicker">Heat is full</p><h2>The rivals got there first</h2><p>Too many wrong answers. The collector's people found the ledger at ${esc(c.word.place)} (the word was ${c.word.word}).</p>
+      : `<p class="kicker">Heat is full</p><h2>The rivals got there first</h2><p>Too many wrong answers. The dealer's people found the ledger at ${esc(c.word.place)} (the word was ${c.word.word}). By morning there is only ash in the oilcloth.</p>${def.signoff ? `<p class="msg"><b>Handler:</b> “${def.signoff}”</p>` : ''}
         <button type="button" data-case="again">Try again (new questions)</button>`, 'end');
   }
 

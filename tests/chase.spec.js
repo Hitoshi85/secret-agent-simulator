@@ -38,6 +38,7 @@ test('Begin starts the chase and the autopilot wins the 45-second drive with him
   expect(r.end, 'a road of 1.5 km, about 45 s').toBe(1500);
   expect(r.status, 'the chase is won').toBe('done');
   expect(r.card).toContain('Follow on foot');
+  expect(r.card, 'the dealer has an employer (phase one story)').toContain('Tell your employer');
   expect(r.t, 'over within about 45 seconds').toBeLessThan(50);
   expect(r.minGap, 'the off-roader stays ahead').toBeGreaterThan(0);
   expect(r.maxAir, 'air time over a crest').toBeGreaterThan(0.2);
@@ -160,6 +161,8 @@ test('the handler call, the stage card, a 3-2-1 count, and the route map when pa
   await page.evaluate(() => { window.__agent.paused = true; });
   await page.click('#begin');
   await expect(page.locator('#chaseBody')).toContainText('PHONE · HANDLER', { ignoreCase: true });
+  await expect(page.locator('#chaseBody'), 'a dealer, never a case-specific item, so it fits either case').toContainText('dealer in stolen art');
+  await expect(page.locator('#chaseBody')).not.toContainText('ledger');
   await page.click('#chaseBody [data-chase="stage"]');
   await expect(page.locator('#chaseBody')).toContainText('Leaving Pienza');
   await page.click('#chaseBody [data-chase="go"]');
