@@ -125,5 +125,6 @@ test('wrong accusations raise Heat until the thief gets away; the right one wins
   const won = await page.evaluate(() => { const A = window.__agent; A.act('close'); return A.act('accuse', A.case.thief); });
   expect(won).toBe('right');
   await expect(page.locator('#caseBody h2')).toHaveText('Dossier recovered');
+  await expect(page.locator('#caseBody')).toContainText('paid in cash by someone they never met'); // phase one's villain thread
   expect(errors).toEqual([]);
 });

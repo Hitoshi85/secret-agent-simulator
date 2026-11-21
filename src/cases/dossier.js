@@ -18,6 +18,11 @@ export default {
     'Start at the Duomo. A flower seller works the east end of the piazza and sees everyone who comes up from the Loggia.',
     'Then the Signoria. Our courier says a painter sets up by the palazzo every afternoon.',
   ],
+  // Phase one's thread (Hitoshi, 2026-11-21): someone else paid for the theft. Shown on the win card.
+  epilogue: [
+    'Inside: this month\'s schedule for the city\'s fresco restorers, who works where and when. The thief was paid in cash by someone they never met.',
+    '<b>Handler:</b> “Paid by a stranger, like the dealer out of Pienza. Someone is behind all of this.”',
+  ],
   tasks: ['Talk to witnesses around the city', 'Look for traces they left', 'Accuse in the crowd. Each wrong guess raises Heat'],
 
   // What tells the suspects apart. Each value says how it looks on a person (see randomLook).

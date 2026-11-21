@@ -107,6 +107,7 @@ test('the compass case plays end to end: any order, Heat, guess at four seals, t
   expect(r.seen).toBe(4);
   expect(r.fresh).toBe(true);
   expect(r.endText).toContain('The ledger is yours');
+  expect(r.endText).toContain('The dealer was working for someone'); // phase one's villain thread
   expect(errors).toEqual([]);
 });
 

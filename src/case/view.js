@@ -143,7 +143,7 @@ export function makeCaseView({ scene, crowd, def, random = Math.random }) {
     const c = v.c, wrong = c.heat;
     open(won
       ? `<p class="kicker">Case ${esc(def.number)} closed</p><h2>Dossier recovered</h2>
-        <p>The thief (${esc(describe(def, c.suspects[c.thief]).toLowerCase())}) hands it over without a scene.</p>
+        <p>The thief (${esc(describe(def, c.suspects[c.thief]).toLowerCase())}) hands it over without a scene.</p>${(def.epilogue || []).map((m) => `<p class="msg">${m}</p>`).join('')}
         <p>Clues found: ${c.found.length} of ${def.clues.length} · wrong accusations: ${wrong}</p>
         <button type="button" data-case="again">Play again (new thief)</button>`
       : `<p class="kicker">Heat is full</p><h2>The thief got away</h2>

@@ -138,7 +138,7 @@ export function makeChase({ renderer, onDone, toast }) {
   c.start = () => {
     document.body.classList.add('chasing'); $('chase').hidden = false; c.total = 0; c.closest = 1e9; c.lostCount = 0;
     c.seed = 1 + Math.floor(Math.random() * 1e6); load(0); c.status = 'card'; // a new road every run
-    card(`<div class="gadget"><p class="kicker">Phone · Handler</p><p class="msg">A black off-roader just left Pienza with the ledger's buyer inside. He's heading for Florence.</p>
+    card(`<div class="gadget"><p class="kicker">Phone · Handler</p><p class="msg">A black off-roader just left Pienza with a dealer in stolen art inside. He's heading for Florence, and something there is on his list.</p>
       <p class="msg">The little red car by the gate is yours. Keys are under the sun visor. <b>Don't lose sight of him.</b></p>
       <p class="small">Hold the left or right side of the screen to steer (or ← → / A D). The car drives itself forward; Brake is at the bottom (Space).</p>
       <button type="button" data-chase="stage">Drive</button><button type="button" class="close" data-chase="skip">Skip to Florence</button></div>`);
@@ -158,7 +158,8 @@ export function makeChase({ renderer, onDone, toast }) {
     c.status = 'done';
     const t = Math.round(c.total);
     card(`<p class="kicker">Pienza to Florence</p><div class="stamp ok">${why === 'caught' ? 'CAUGHT UP' : 'IN SIGHT'}</div><h2>${{ caught: 'Right on his bumper', sight: 'He never left your sight' }[why] || 'You followed him all the way'}</h2>
-      <p>The off-roader drops into the city and stops near the cathedral. Leave the car and follow on foot.</p>
+      <p>The off-roader drops into the city and stops near the cathedral. Before he gets out he makes a short call, and you catch one line: “Tell your employer it'll be done by tonight.”</p>
+      <p>Leave the car and follow on foot.</p>
       <p class="stat"><span>Time</span><b>${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}</b></p><p class="stat"><span>Closest gap</span><b>${Math.round(c.closest)} m</b></p><p class="stat"><span>Times out of sight</span><b>${c.lostCount}</b></p>
       <button type="button" data-chase="foot">Follow on foot</button>`);
   }
