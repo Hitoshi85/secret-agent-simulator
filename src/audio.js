@@ -224,6 +224,16 @@ export function makeAudio() {
   a.tick = () => { if (a.ctx && hit(master, 'bandpass', 1800, 8, 0.001, 0.05, 0.7)) stats.played.tick++; };
 
   // A touch pointerdown is not a user activation (Chrome's autoplay rule, and iOS Safari wants touchend or click), so listen to all of them; unlock is idempotent.
+  // For tests: how loud the game is right now (RMS of the mix), read through an analyser made on first use.
+  let probe = null, probeData = null;
+  a.level = () => {
+    if (!a.ctx || !master) return 0;
+    if (!probe) { probe = a.ctx.createAnalyser(); probe.fftSize = 2048; probeData = new Float32Array(probe.fftSize); master.connect(probe); live(1); }
+    probe.getFloatTimeDomainData(probeData);
+    let sum = 0; for (const x of probeData) sum += x * x;
+    return Math.sqrt(sum / probeData.length);
+  };
+
   for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) addEventListener(ev, a.unlock, { capture: true });
   document.addEventListener('visibilitychange', () => { if (!a.ctx || a.muted) return; if (document.hidden) { a.ctx.suspend().catch(() => {}); if (media) media.pause(); } else a.ctx.resume().catch(() => {}); }); // the silent <audio> restarts on the next tap
   return a;
