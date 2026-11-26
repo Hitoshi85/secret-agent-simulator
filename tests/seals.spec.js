@@ -19,7 +19,7 @@ test('every subject makes fair questions with one right answer; seen ones are av
     const Q = await import('/src/case/quiz.js');
     const def = (await import('/src/cases/compass.js')).default;
     const problems = [], ids = {}, formats = {};
-    for (const s of def.subjects) {
+    for (const s of [...def.subjects, ...def.shelved]) { // shelved engineering subjects stay fair too
       ids[s.id] = new Set(); formats[s.id] = new Set();
       for (let n = 0; n < 300; n++) {
         const q = Q.makeQuestion(s); ids[s.id].add(q.id); formats[s.id].add(q.format);
@@ -51,6 +51,17 @@ test('every subject makes fair questions with one right answer; seen ones are av
   expect(r.formats.world).toEqual(['choice', 'order']);
 });
 
+test('engineering seals are hidden for now, still six seals; ?eng brings them back', async ({ page }) => {
+  const errors = await open(page);
+  const ids = () => page.evaluate(() => window.__agent.case.seals.map((s) => s.id).sort());
+  const off = await ids();
+  await open(page, '/index.html?case=compass&eng');
+  const on = await ids();
+  expect(off).toEqual(['art', 'art2', 'military', 'tech', 'world', 'world2']);
+  expect(on).toEqual(['art', 'elec', 'mech', 'military', 'tech', 'world']);
+  expect(errors).toEqual([]);
+});
+
 test('the banks are big and clean: 40 facts per subject, 100+ events, unique pairs', async ({ page }) => {
   await open(page);
   const r = await page.evaluate(async () => {
@@ -71,6 +82,28 @@ test('the banks are big and clean: 40 facts per subject, 100+ events, unique pai
   expect(r.events).toBeGreaterThanOrEqual(100);
 });
 
+test('the hidden word: 20 six-letter place words, none repeats until every one is played', async ({ page }) => {
+  await open(page);
+  const r = await page.evaluate(async () => {
+    const S = await import('/src/case/seals.js');
+    const def = (await import('/src/cases/compass.js')).default;
+    const bad = [], seen = new Set(), run = [];
+    if (new Set(def.words.map((w) => w.word)).size !== def.words.length) bad.push('a word appears twice');
+    for (const w of def.words) if (!/^[A-Z]{6}$/.test(w.word) || !w.place) bad.push(`${w.word} is not a six-letter place word`);
+    for (let n = 0; n < def.words.length * 3; n++) run.push(S.newSealCase(def, Math.random, seen).word.word);
+    for (let k = 0; k < 3; k++) if (new Set(run.slice(k * def.words.length, (k + 1) * def.words.length)).size !== def.words.length) bad.push(`round ${k + 1} repeats a word`);
+    for (let n = 1; n < run.length; n++) if (run[n] === run[n - 1]) bad.push(`${run[n]} twice in a row`);
+    // The page remembers played words on the phone, and the next play picks another.
+    const first = window.__agent.case.word.word, stored = JSON.parse(localStorage.getItem('compass-seen'));
+    window.__agent.act('again');
+    return { bad, count: def.words.length, stored: stored.includes('word:' + first), next: window.__agent.case.word.word !== first };
+  });
+  expect(r.bad).toEqual([]);
+  expect(r.count).toBeGreaterThanOrEqual(20);
+  expect(r.stored).toBe(true);
+  expect(r.next).toBe(true);
+});
+
 test('the compass case plays end to end: any order, Heat, guess at four seals, the ledger', async ({ page }) => {
   const errors = await open(page);
   await page.evaluate(() => window.__agent.act('briefed'));
@@ -81,7 +114,7 @@ test('the compass case plays end to end: any order, Heat, guess at four seals, t
     const order = [...c.seals].reverse(); // any order works
     v.ask(order[0].id);
     const q = order[0].q;
-    const wrong = q.format === 'choice' ? (q.answer + 1) % 4 : q.format === 'number' ? q.answer + 7 : q.format === 'text' ? 'ZZZ' : q.format === 'switches' ? q.answer.map((b) => 1 - b) : q.format === 'order' ? [...q.answer].reverse() : {};
+    const wrong = q.format === 'choice' ? (q.answer + 1) % 4 : q.format === 'number' ? q.answer + 7 : q.format === 'text' ? 'ZZZ' : q.format === 'switches' ? q.answer.map((b) => 1 - b) : q.format === 'order' ? [...q.answer].reverse() : Object.fromEntries(q.left.map((l, i) => [l, q.answer[q.left[(i + 1) % 4]]]));
     out.wrong = A.act('answer', wrong); out.heat = c.heat;
     out.lockedGuess = A.act('guess', c.word.word);
     for (const s of order.slice(0, 4)) { v.ask(s.id); out[s.id] = A.act('answer', s.q.answer); }
@@ -93,7 +126,7 @@ test('the compass case plays end to end: any order, Heat, guess at four seals, t
     out.ledger = ledger.mesh.visible && v.leads().includes(ledger);
     out.end = v.interact(ledger); out.status = c.status; out.endText = document.getElementById('caseBody').textContent;
     v.ask(c.seals[0].id); A.act('again'); out.fresh = v.cur === null; // a new play never reuses the last play's input
-    out.seen = JSON.parse(localStorage.getItem('compass-seen')).length;
+    out.seen = JSON.parse(localStorage.getItem('compass-seen')).filter((id) => !id.startsWith('word:')).length; // questions answered
     return out;
   });
   expect(r.leads).toBe(6);
@@ -113,7 +146,7 @@ test('the compass case plays end to end: any order, Heat, guess at four seals, t
 });
 
 test('unfinished answers cost no Heat, wrong picks stay crossed out, and the lamps stay dark until the key turns', async ({ page }) => {
-  await open(page);
+  await open(page, '/index.html?case=compass&eng'); // calculations and lamps live in the shelved engineering seals
   const r = await page.evaluate(async () => {
     const A = window.__agent, v = A.caseView, S = await import('/src/case/seals.js'), out = {};
     const find = (fmt) => { for (let n = 0; n < 300; n++) { A.act('again'); A.act('close'); const s = A.case.seals.find((x) => { v.ask(x.id); return x.q.format === fmt; }); if (s) { v.ask(s.id); return s; } } return null; };
@@ -141,7 +174,7 @@ test('unfinished answers cost no Heat, wrong picks stay crossed out, and the lam
 });
 
 test('questions answer by tapping: options, keypad, switches', async ({ page }) => {
-  await open(page);
+  await open(page, '/index.html?case=compass&eng');
   for (const fmt of ['choice', 'number', 'switches', 'text']) {
     const id = await page.evaluate((fmt) => {
       const A = window.__agent, v = A.caseView;
@@ -186,5 +219,59 @@ test('Case 02 is the default and the title picks Case 01; Begin still offers the
 
   await page.goto('/index.html?case=dossier'); await ready();
   await expect(page.locator('#cases [data-place="dossier"]')).toHaveAttribute('aria-pressed', 'true');
+  expect(errors).toEqual([]);
+});
+
+test('phone a friend: an expert talks you through and rules out two answers, anyone else gives the hint, calls run out', async ({ page }) => {
+  await open(page);
+  const r = await page.evaluate(async () => {
+    const Q = await import('/src/case/quiz.js');
+    const S = await import('/src/case/seals.js');
+    const def = (await import('/src/cases/compass.js')).default;
+    const problems = [];
+    for (const s of def.subjects) for (let n = 0; n < 200; n++) {
+      const q = Q.makeQuestion(s);
+      if (!q.call || q.call === q.hint) problems.push(`${q.id}: no detailed call`);
+      if (/undefined|NaN/.test(q.call)) problems.push(`${q.id}: ${q.call}`);
+      if (q.format === 'choice' && !(q.strike.length === 2 && !q.strike.includes(q.answer) && new Set(q.strike).size === 2)) problems.push(`${q.id}: strike`);
+    }
+    for (const s of def.subjects) if (!def.friends.some((f) => f.subjects.includes(s.id)) && !['mech', 'elec'].includes(s.id)) problems.push(`nobody knows ${s.id}`);
+    const c = S.newSealCase(def), art = S.openSeal(c, 'art'), war = S.openSeal(c, 'military');
+    const start = c.calls;
+    const weak = S.phone(c, 'art', 'codes'), strong = S.phone(c, 'military', 'codes');
+    const strongText = war.q.call, weakText = art.q.hint;
+    const none = S.phone(c, 'world', 'historian');
+    const struckPick = war.q.format === 'choice' ? S.answer(c, 'military', war.q.strike[0]) : 'incomplete';
+    return { problems: problems.slice(0, 5), start, left: c.calls, weak, strong, strongText, weakText, none, struckPick, heat: c.heat, struck: war.struck.length, format: war.q.format };
+  });
+  expect(r.problems).toEqual([]);
+  expect(r.start).toBe(2);
+  expect(r.weak).toMatchObject({ expert: false, text: r.weakText });
+  expect(r.strong).toMatchObject({ expert: true, text: r.strongText });
+  expect(r.none, 'no calls left').toBeNull();
+  expect(r.left).toBe(0);
+  expect(r.struckPick, 'a ruled-out answer costs nothing').toBe('incomplete');
+  expect(r.heat).toBe(0);
+  if (r.format === 'choice') expect(r.struck).toBe(2);
+});
+
+test('phone a friend on screen: the contact list, the call, the note on the seal, and ?variant=calls3', async ({ page }) => {
+  const errors = await open(page, '/index.html?case=compass&variant=calls3');
+  const r = await page.evaluate(() => {
+    const a = window.__agent; a.act('close'); a.caseView.ask('art');
+    const btn = document.querySelector('[data-q="friends"]').textContent;
+    document.querySelector('[data-q="friends"]').click();
+    const list = document.querySelectorAll('[data-q="ring"]').length;
+    const call = a.act('ring', 'art');
+    const msg = document.querySelector('#caseBody .msg').textContent;
+    document.querySelector('[data-q="back"]').click();
+    return { btn, list, call, msg, note: !!document.querySelector('#caseBody .callnote'), left: a.case.calls };
+  });
+  expect(r.btn).toContain('3 calls left');
+  expect(r.list).toBe(3);
+  expect(r.call.expert).toBe(true);
+  expect(r.msg).toContain(r.call.text.replace(/<[^>]+>/g, '').slice(0, 20));
+  expect(r.note).toBe(true);
+  expect(r.left).toBe(2);
   expect(errors).toEqual([]);
 });

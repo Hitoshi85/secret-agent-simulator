@@ -85,6 +85,18 @@ const WAR_WORDS = ['LEGION', 'CANNAE', 'CAVALRY', 'FLANK', 'SIEGE', 'GARRISON', 
 
 export const BANKS = { EVENTS, INVENTIONS, ARTWORKS, WAR_WORDS }; // for the tests
 
+// The engineering seals are kept but not shown for now (Hitoshi, 2026-11-26); two more history seals
+// take their places so there are still six seals, one per letter. `?eng` brings them back.
+const ENGINEERING = [
+  { id: 'mech', name: 'Mechanical engineering', makers: [gearWheel, gearSpeed, lever, pulley] },
+  { id: 'elec', name: 'Electrical engineering', makers: [logic, logic, seriesResistor, power, parallel] },
+];
+const SPARES = [
+  { id: 'world2', name: 'More world history', makers: [ordering(EVENTS), choice(FACTS.world)] },
+  { id: 'art2', name: 'More art history', makers: [choice(FACTS.art), matching(ARTWORKS, 'The lost labels', 'Four works in the guild\'s ledger have lost their labels. Join each artist to the work.')] },
+];
+const SHOW_ENGINEERING = typeof location !== 'undefined' && new URLSearchParams(location.search).has('eng');
+
 export default {
   id: 'compass',
   kind: 'seals',
@@ -108,6 +120,20 @@ export default {
   ],
   // The handler's sign-off on the win and loss cards (Hitoshi, 2026-11-21): the same line in every case.
   signoff: 'Pienza, and now this. Someone is behind all of it.',
+  // Phone a friend (Hitoshi, 2026-11-26): three friends, each expert on some seals. An expert talks you
+  // through the seal; anyone else only knows the short hint. Each call uses one of `calls` per play.
+  calls: 2,
+  friends: [
+    { id: 'historian', name: 'Bruna Ferri', role: 'Historian', knows: 'World history · History of technology', subjects: ['world', 'world2', 'tech'],
+      hello: 'Ah, I know this one. Listen.', unsure: 'Not my field, I\'m afraid. All I can tell you is this.',
+      look: { seed: 33, fem: true, skin: '#c99a78', hair: '#8a8580', hairStyle: 'bob', age: 0.6, W: 55, J: 39, cloth: '#5a3a2a', clothes: 'turtleneck', glasses: '#3a2a1a', eyes: '#4a3020', lip: '#8a3a32', bg: ['#2a1a14', '#7a5a3a'], mouthW: 15 } },
+    { id: 'art', name: 'Teo Marchi', role: 'Art restorer', knows: 'Art history', subjects: ['art', 'art2'],
+      hello: 'I spend my days under these paintings. Here\'s how to see it.', unsure: 'Paint I know; this, not really. The most I can say is this.',
+      look: { seed: 47, skin: '#e9c4a6', hair: '#3a2818', hairStyle: 'short', age: 0.35, W: 61, J: 51, cloth: '#3a4a5a', eyes: '#4a6a8a', beard: '#3a2818', bg: ['#1a1e24', '#5a6a7a'] } },
+    { id: 'codes', name: 'Ines Valli', role: 'Codebreaker', knows: 'Military history · every cipher', subjects: ['military'], formats: ['text'],
+      hello: 'Codes and campaigns, my favourite. Go slowly.', unsure: 'Not one of mine. I only know the textbook line.',
+      look: { seed: 59, fem: true, skin: '#7a5236', hair: '#1a1a1a', hairStyle: 'long', age: 0.25, W: 55, J: 38, cloth: '#1d2a24', eyes: '#2a1a10', lip: '#6a2a26', earring: true, bg: ['#101814', '#3a5a4a'], mouthW: 15 } },
+  ],
   maxHeat: 3,
   guessAt: 4, // seals broken before the word may be guessed (Hitoshi's choice)
   subjects: [
@@ -115,9 +141,9 @@ export default {
     { id: 'art', name: 'Art history', makers: [choice(FACTS.art), choice(FACTS.art), matching(ARTWORKS, 'The lost labels', 'Four works in the guild\'s ledger have lost their labels. Join each artist to the work.')] },
     { id: 'military', name: 'Military history', makers: [cipher(WAR_WORDS), choice(FACTS.military)] },
     { id: 'tech', name: 'History of technology', makers: [choice(FACTS.tech), matching(INVENTIONS, 'The guild\'s heroes', 'Four statues in the guild\'s ledger have lost their plaques. Join each maker to what they are remembered for.')] },
-    { id: 'mech', name: 'Mechanical engineering', makers: [gearWheel, gearSpeed, lever, pulley] },
-    { id: 'elec', name: 'Electrical engineering', makers: [logic, logic, seriesResistor, power, parallel] },
+    ...(SHOW_ENGINEERING ? ENGINEERING : SPARES),
   ],
+  shelved: SHOW_ENGINEERING ? SPARES : ENGINEERING, // the subjects not dealt this play (kept and tested)
   // Where seals can be cut (six are used each play), in metres on the city plan.
   sites: [
     { id: 'baptistery', name: 'Baptistery doors', at: [-140, 6] },
@@ -130,13 +156,28 @@ export default {
     { id: 'ponte', name: 'Ponte Vecchio', at: [-140, 668] },
     { id: 'pitti', name: 'Piazza de\' Pitti', at: [-130, 850] },
   ],
-  // The hidden word, one per play, and the place it sends you for the ledger.
+  // The hidden word, one per play, and the place it hints at, where the ledger waits. Each phone plays
+  // every word once before any repeats (Hitoshi, 2026-11-26). One letter per seal: six letters.
   words: [
     { word: 'CUPOLA', place: 'the Duomo\'s dome', at: [66, 4] },
+    { word: 'MARBLE', place: 'the Duomo\'s dome', at: [66, 4] },
+    { word: 'VAULTS', place: 'the Duomo\'s dome', at: [66, 4] },
     { word: 'LOGGIA', place: 'the Loggia dei Lanzi', at: [-56, 516] },
+    { word: 'STATUE', place: 'the Loggia dei Lanzi', at: [-56, 516] },
+    { word: 'ARCHES', place: 'the Loggia dei Lanzi', at: [-56, 516] },
+    { word: 'SABINE', place: 'the Loggia dei Lanzi', at: [-56, 516] },
     { word: 'BRIDGE', place: 'Ponte Vecchio', at: [-140, 660] },
+    { word: 'JEWELS', place: 'Ponte Vecchio', at: [-140, 660] },
+    { word: 'VASARI', place: 'Ponte Vecchio', at: [-140, 660] },
     { word: 'BELFRY', place: 'the Campanile', at: [-104, 60] },
+    { word: 'GIOTTO', place: 'the Campanile', at: [-104, 60] },
+    { word: 'CHIMES', place: 'the Campanile', at: [-104, 60] },
     { word: 'CLOCKS', place: 'the Palazzo Vecchio tower', at: [-46, 444] },
+    { word: 'TURRET', place: 'the Palazzo Vecchio tower', at: [-46, 444] },
+    { word: 'PALACE', place: 'the Palazzo Vecchio tower', at: [-46, 444] },
     { word: 'GARDEN', place: 'the garden gate at the Pitti', at: [-124, 856] },
+    { word: 'GROTTO', place: 'the garden gate at the Pitti', at: [-124, 856] },
+    { word: 'BOBOLI', place: 'the garden gate at the Pitti', at: [-124, 856] },
+    { word: 'HEDGES', place: 'the garden gate at the Pitti', at: [-124, 856] },
   ],
 };

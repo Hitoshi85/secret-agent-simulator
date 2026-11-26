@@ -16,6 +16,7 @@ const gearWheel = (r) => {
   return { id: `gear:${p1}-${w1}-${p2}-${w2}`, format: 'number', unit: 'teeth', answer: w2, title: 'The missing wheel',
     prompt: `A clock train: a <b>${p1}</b>-tooth pinion drives a <b>${w1}</b>-tooth wheel; on that wheel's shaft a <b>${p2}</b>-tooth pinion drives the last wheel. The last wheel must turn once for every <b>${R}</b> turns of the first pinion. How many teeth must it have?`,
     hint: 'Each pair slows the turning by (driven teeth ÷ driving teeth). The two ratios multiply.',
+    call: `The first pair: ${w1} ÷ ${p1} = ${k1}, so it turns ${k1} times slower. You need ${R} times in all, so the last pair has to slow it another ${R} ÷ ${k1} = ${k2} times. Give the last wheel ${k2} times the teeth of its ${p2}-tooth pinion.`,
     explain: `${w1} ÷ ${p1} = ${k1}, so the last pair must give ${R} ÷ ${k1} = ${k2}: ${p2} × ${k2} = ${w2} teeth.`,
     figure: { kind: 'gears', teeth: [p1, w1, p2, '?'] } };
 };
@@ -24,6 +25,7 @@ const gearSpeed = (r) => {
   return { id: `rpm:${a}-${b}-${rpm}`, format: 'number', unit: 'rpm', answer: rpm / k, title: 'The mill wheel',
     prompt: `A <b>${a}</b>-tooth gear turning at <b>${rpm} rpm</b> drives a <b>${b}</b>-tooth gear. How fast does the big gear turn?`,
     hint: 'Teeth passing per minute are the same on both gears: teeth × rpm is equal.',
+    call: `On the small gear, ${a} teeth × ${rpm} rpm = ${a * rpm} teeth go past every minute. The big gear sees the same ${a * rpm}, but it has ${b} teeth, so divide by ${b}.`,
     explain: `${a} × ${rpm} = ${b} × speed, so the speed is ${fmt(rpm / k)} rpm.`, figure: { kind: 'gears', teeth: [a, b] } };
 };
 const lever = (r) => {
@@ -31,6 +33,7 @@ const lever = (r) => {
   return { id: `lever:${dL}-${dE}-${F}`, format: 'number', unit: 'N', answer: F, title: 'The guild lever',
     prompt: `A stone weighing <b>${W} N</b> sits <b>${fmt(dL)} m</b> from a lever's pivot. You push down <b>${fmt(dE)} m</b> from the pivot on the other side. What force just balances it?`,
     hint: 'Moments balance: force × distance is the same on both sides of the pivot.',
+    call: `The stone's side: ${W} N × ${fmt(dL)} m = ${fmt(W * dL)}. Your side must come to the same ${fmt(W * dL)}, and you push at ${fmt(dE)} m, so divide ${fmt(W * dL)} by ${fmt(dE)}.`,
     explain: `${W} × ${fmt(dL)} = force × ${fmt(dE)}, so the force is ${F} N.` };
 };
 const pulley = (r) => {
@@ -40,6 +43,8 @@ const pulley = (r) => {
       ? `A block and tackle holds a <b>${W} N</b> load on <b>${n}</b> supporting ropes. Ignoring friction, what pull on the free end holds it?`
       : `A block and tackle has <b>${n}</b> ropes supporting the load. How far must you pull the free end to raise the load by <b>2 m</b>?`,
     hint: 'Each supporting rope carries an equal share; and every rope must shorten by the lift.',
+    call: ask ? `The ${W} N is shared evenly by the ${n} ropes, and the free end is just one of those ropes. Divide ${W} by ${n}.`
+      : `To lift the load 2 m, each of the ${n} supporting ropes has to get 2 m shorter, and all that rope comes out through the free end. Add it up: ${n} lots of 2 m.`,
     explain: ask ? `${W} ÷ ${n} = ${E} N.` : `${n} ropes × 2 m = ${2 * n} m of rope.` };
 };
 
@@ -50,19 +55,20 @@ const seriesResistor = (r) => {
   return { id: `ohm:${V}-${I}-${Rb}`, format: 'number', unit: 'Ω', answer: Rt - Rb, title: 'The lantern fuse',
     prompt: `A lamp of <b>${Rb} Ω</b> runs from a <b>${V} V</b> battery. The current must be exactly <b>${fmt(I)} A</b>. What resistor goes in series with it?`,
     hint: 'Ohm\'s law: total resistance = voltage ÷ current. Series resistances add.',
+    call: `For ${fmt(I)} A from ${V} V the whole circuit needs ${V} ÷ ${fmt(I)} = ${Rt} Ω. The lamp already gives ${Rb} Ω of that; the resistor makes up the rest.`,
     explain: `${V} V ÷ ${fmt(I)} A = ${Rt} Ω in total, minus the ${Rb} Ω lamp: ${Rt - Rb} Ω.` };
 };
 const power = (r) => {
   const V = pick([12, 24, 120, 230], r), I = int(1, 20, r) / 2, P = V * I;
   return { id: `power:${V}-${I}`, format: 'number', unit: 'A', answer: I, title: 'The workshop heater',
     prompt: `A heater is rated <b>${fmt(P)} W</b> on a <b>${V} V</b> supply. What current does it draw?`,
-    hint: 'Power = voltage × current.', explain: `${fmt(P)} W ÷ ${V} V = ${fmt(I)} A.` };
+    hint: 'Power = voltage × current.', call: `Turn it round: current = power ÷ voltage. Divide the ${fmt(P)} W by the ${V} V.`, explain: `${fmt(P)} W ÷ ${V} V = ${fmt(I)} A.` };
 };
 const parallel = (r) => {
   const [a, b, c] = pick([[3, 6, 2], [4, 12, 3], [6, 12, 4], [10, 15, 6], [12, 24, 8], [20, 30, 12], [6, 6, 3], [5, 20, 4], [8, 8, 4], [12, 12, 6]], r), k = pick([1, 2, 5, 10], r);
   return { id: `par:${a * k}-${b * k}`, format: 'number', unit: 'Ω', answer: c * k, title: 'Two coils side by side',
     prompt: `Resistors of <b>${a * k} Ω</b> and <b>${b * k} Ω</b> are connected in parallel. What is their combined resistance?`,
-    hint: 'For two in parallel: product ÷ sum.', explain: `(${a * k} × ${b * k}) ÷ (${a * k} + ${b * k}) = ${c * k} Ω.` };
+    hint: 'For two in parallel: product ÷ sum.', call: `Multiply them: ${a * k} × ${b * k} = ${a * b * k * k}. Add them: ${a * k} + ${b * k} = ${(a + b) * k}. Now divide the first by the second. Two in parallel always come out smaller than the smaller one.`, explain: `(${a * k} × ${b * k}) ÷ (${a * k} + ${b * k}) = ${c * k} Ω.` };
 };
 // Control logic: three switches, an Open lamp and an Alarm lamp. Exactly one setting lights Open alone.
 export const GATES = { AND: (x, y) => x & y, OR: (x, y) => x | y, XOR: (x, y) => x ^ y, NAND: (x, y) => 1 - (x & y), NOR: (x, y) => 1 - (x | y) };
@@ -82,6 +88,7 @@ const logic = (r) => {
     return { id: `logic:${c.g1}-${c.g2}-${c.notC}-${c.g3}-${c.a}-${c.na}`, format: 'switches', answer: sw, circuit: c, title: 'The goldsmith\'s strongbox',
       prompt: 'The box opens when the <b>Open</b> lamp is lit, but if <b>Alarm</b> lights too, the rivals are told. Set the three switches.',
       hint: 'AND needs both inputs on; OR either; XOR exactly one; NAND and NOR are the opposite of AND and OR. A small circle means NOT.',
+      call: `Switch C must be ${sw[2] ? 'on' : 'off'}. Now look at the Alarm gate: find what keeps it dark, then light Open with A and B.`,
       explain: `Only A ${sw[0] ? 'on' : 'off'}, B ${sw[1] ? 'on' : 'off'}, C ${sw[2] ? 'on' : 'off'} lights Open without the Alarm.` };
   }
 };
@@ -95,20 +102,21 @@ const cipher = (words) => (r) => {
   const base = { id: `cipher:${kind}:${word}${kind === 'caesar' ? ':' + k : ''}`, format: 'text', answer: word, title: 'The coded rim' };
   if (kind === 'caesar') return { ...base, cipher: caesar(word, k),
     prompt: `Scratched on the stone, in the cipher a Roman general used for his letters: every letter moved <b>${k}</b> places on along the alphabet. Decode it.`,
-    hint: `Move each letter ${k} places back (A comes after Z).`, explain: `Shifting back ${k} gives ${word}.` };
+    hint: `Move each letter ${k} places back (A comes after Z).`, call: `Take the first letter, ${caesar(word, k)[0]}: count ${k} back and you land on ${word[0]}. The second, ${caesar(word, k)[1]}, goes back to ${word[1]}. Carry on the same way.`, explain: `Shifting back ${k} gives ${word}.` };
   if (kind === 'atbash') return { ...base, cipher: [...word].map((ch) => A[25 - A.indexOf(ch)]).join(''),
     prompt: 'An old mirror cipher, first used in Hebrew scripture: the alphabet folded in half, so A is Z, B is Y, and so on. Decode it.',
-    hint: 'Each letter swaps with the one at the same distance from the other end.', explain: `Folding the alphabet gives ${word}.` };
+    hint: 'Each letter swaps with the one at the same distance from the other end.', call: `Write A to M on one line and Z back to N under it: each letter swaps with the one under or over it. So ${A[25 - A.indexOf(word[0])]} is ${word[0]} and ${A[25 - A.indexOf(word[1])]} is ${word[1]}.`, explain: `Folding the alphabet gives ${word}.` };
   if (kind === 'number') return { ...base, cipher: [...word].map((ch) => A.indexOf(ch) + 1).join('·'),
     prompt: 'A field code from a dispatch case: each number is a letter\'s place in the alphabet. Decode it.',
-    hint: 'A = 1, M = 13, Z = 26.', explain: `The numbers spell ${word}.` };
+    hint: 'A = 1, M = 13, Z = 26.', call: `Count along: A = 1, E = 5, J = 10, O = 15, T = 20, Y = 25. So ${A.indexOf(word[0]) + 1} is ${word[0]} and ${A.indexOf(word[1]) + 1} is ${word[1]}.`, explain: `The numbers spell ${word}.` };
   return { ...base, cipher: [...word].map((ch) => MORSE[A.indexOf(ch)].replaceAll('.', '·').replaceAll('-', '−')).join('   '),
     prompt: 'Tapped out like a telegraph, in the dot-and-dash code that ran armies\' wires from the 1850s. Decode it.',
-    hint: 'Letters are split by wide gaps. E is · and T is −. A is ·− and N is −·. S is ··· and O is −−−.', explain: `The taps spell ${word}.`,};
+    hint: 'Letters are split by wide gaps. E is · and T is −. A is ·− and N is −·. S is ··· and O is −−−.', call: `The first group is ${word[0]} and the second is ${word[1]}. A few more: I is ··, M is −−, R is ·−·, D is −··, U is ··−, G is −−·, K is −·−, L is ·−··, C is −·−·, B is −···.`, explain: `The taps spell ${word}.`,};
 };
 
 // ---- Banks: orderings, pairs, facts ----
 // Put in order: five events at least `gap` years apart, drawn from a bank of [year, text].
+const yr = (y) => (y < 0 ? `${-y} BC` : String(y));
 const ordering = (bank, gap = 8) => (r) => {
   for (;;) {
     const set = shuffle([...bank], r).slice(0, 5);
@@ -117,14 +125,14 @@ const ordering = (bank, gap = 8) => (r) => {
     const sorted = [...set].sort((a, b) => a[0] - b[0]);
     return { id: `order:${ys.join('-')}`, format: 'order', title: 'The bronze calendar', items: set.map((e) => e[1]), answer: sorted.map((e) => e[1]),
       prompt: 'The guild scratched five events into the stone. Put them in order, earliest at the top.',
-      hint: `The earliest is ${sorted[0][1].replace(/^The /, 'the ')}.`, explain: sorted.map((e) => `${e[0] < 0 ? -e[0] + ' BC' : e[0]}: ${e[1]}`).join('<br>') };
+      hint: `The earliest is ${sorted[0][1].replace(/^The /, 'the ')}.`, call: `The earliest is ${sorted[0][1].replace(/^The /, 'the ')}, in ${yr(sorted[0][0])}; the latest is ${sorted[4][1].replace(/^The /, 'the ')}, in ${yr(sorted[4][0])}. That leaves three for the middle.`, explain: sorted.map((e) => `${e[0] < 0 ? -e[0] + ' BC' : e[0]}: ${e[1]}`).join('<br>') };
   }
 };
 // Match pairs: four [left, right] pairs from a bank, with no left or right used twice.
 const matching = (bank, title, prompt) => (r) => {
   const set = []; for (const p of shuffle([...bank], r)) if (set.length < 4 && !set.some((q) => q[0] === p[0] || q[1] === p[1])) set.push(p);
   return { id: `match:${set.map((p) => p[0]).sort().join('|')}`, format: 'match', title, prompt, left: set.map((p) => p[0]),
-    right: shuffle(set.map((p) => p[1]), r), answer: Object.fromEntries(set), hint: `${set[0][0]}: ${set[0][1]}.`,
+    right: shuffle(set.map((p) => p[1]), r), answer: Object.fromEntries(set), hint: `${set[0][0]}: ${set[0][1]}.`, call: `${set[0][0]}: ${set[0][1]}. And ${set[1][0]}: ${set[1][1]}. Two left.`,
     explain: set.map((p) => `${p[0]}: ${p[1]}`).join('<br>') };
 };
 // Multiple choice from a fact: { id, q, a, wrong: [4 or more], why }. Three wrong answers are drawn each time.
@@ -132,8 +140,10 @@ const choice = (bank) => (r, seen) => {
   const fresh = bank.filter((f) => !seen.has('fact:' + f.id));
   const f = pick(fresh.length ? fresh : bank, r);
   const options = shuffle([f.a, ...shuffle([...f.wrong], r).slice(0, 3)], r);
+  const strike = shuffle(options.map((_, i) => i).filter((i) => i !== options.indexOf(f.a)), r).slice(0, 2).sort(); // a call rules out two wrong options
   return { id: 'fact:' + f.id, format: 'choice', title: f.title || 'The guild\'s question', prompt: f.q, options, answer: options.indexOf(f.a),
-    hint: f.hint || 'Rule out the answers from the wrong century first.', explain: f.why };
+    hint: f.hint || 'Rule out the answers from the wrong century first.', explain: f.why, strike,
+    call: `It isn't ${options[strike[0]]}, and it isn't ${options[strike[1]]}.${f.hint ? ' ' + f.hint : ''}` };
 };
 
 // A question for a subject: one of its makers at random, avoiding ids already seen when it can.

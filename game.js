@@ -132,6 +132,7 @@ function act(action, a, b, c) {
     case 'dot': if (!caseView) return false; return caseView.dot(a);
     case 'answer': if (!caseView) return false; return caseView.answer ? caseView.answer(a) : null; // seal cases: answer the open question
     case 'guess': if (!caseView) return false; return caseView.guess ? caseView.guess(a) : null;
+    case 'ring': if (!caseView) return false; return caseView.ring ? caseView.ring(a) : null; // seal cases: phone a friend about the open seal
     case 'again': if (!caseView) return false; caseView.reset(); sessionLog.caseStarted(state.clock); teleport(agent, START.at, START.face); cam.yaw = agent.heading; cam.pitch = START.pitch; caseView.caseFile(); return true;
     case 'interact': if (!caseView) return false; { const t = caseView.targets.find((q) => q.kind === a && String(q.id) === String(b)); return t ? approach(t) : null; }
     case 'feedback': {

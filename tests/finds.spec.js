@@ -1,4 +1,4 @@
-// Case 02's collectibles (R28): stray cats come out with Heat (two at Heat 0, two more per point),
+// Case 02's collectibles (R29): stray cats come out with Heat (two at Heat 0, two more per point),
 // stalls hold Florence food and souvenirs, finds go into an album kept on the phone, and none of it
 // changes the case. Case 01 has none of it.
 const { test, expect } = require('@playwright/test');
