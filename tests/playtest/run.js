@@ -1,7 +1,7 @@
 // The AI playtester: plays the dossier case, Case 02 and the car chase as three personas (novice,
 // efficient, careless) over many seeds through window.__agent, and writes a report.
 //   npm run playtest                 20 seeds per persona and mode
-//   npm run playtest -- --seeds 5    fewer seeds; --modes chase,dossier picks modes; --variant run2.5 plays a ?variant=
+//   npm run playtest -- --seeds 5    fewer seeds; --modes chase,dossier picks modes; --variant speed2.5 plays a ?variant=
 // Writes playtest/playtest-report.json (every run's timeline) and playtest/playtest-report.md (the
 // summary, also added to the GitHub job summary in CI). Report only: targets show met or missed and
 // never fail the run. The personas are in tests/playtest/drivers.js.
@@ -19,7 +19,7 @@ const MODES = arg('modes', 'dossier,compass,chase').split(',');
 const PERSONAS = ['novice', 'efficient', 'careless'];
 const WORKERS = Number(arg('workers', process.env.PLAYTEST_WORKERS || 3));
 const PORT = Number(arg('port', 4180));
-const VARIANT = arg('variant', ''); // --variant run2.5: play a ?variant= build
+const VARIANT = arg('variant', ''); // --variant speed2.5: play a ?variant= build
 const q = VARIANT ? `&variant=${VARIANT}` : '';
 const URL = { dossier: `/index.html?case=dossier${q}`, compass: `/index.html?case=compass${q}`, chase: `/index.html?${q.slice(1)}` };
 
