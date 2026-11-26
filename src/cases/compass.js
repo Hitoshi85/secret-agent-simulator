@@ -108,6 +108,20 @@ export default {
   ],
   // The handler's sign-off on the win and loss cards (Hitoshi, 2026-11-21): the same line in every case.
   signoff: 'Pienza, and now this. Someone is behind all of it.',
+  // Phone a friend (Hitoshi, 2026-11-26): three friends, each expert on some seals. An expert talks you
+  // through the seal; anyone else only knows the short hint. Each call uses one of `calls` per play.
+  calls: 2,
+  friends: [
+    { id: 'historian', name: 'Bruna Ferri', role: 'Historian', knows: 'World history · History of technology', subjects: ['world', 'tech'],
+      hello: 'Ah, I know this one. Listen.', unsure: 'Not my field, I\'m afraid. All I can tell you is this.',
+      look: { seed: 33, fem: true, skin: '#c99a78', hair: '#8a8580', hairStyle: 'bob', age: 0.6, W: 55, J: 39, cloth: '#5a3a2a', clothes: 'turtleneck', glasses: '#3a2a1a', eyes: '#4a3020', lip: '#8a3a32', bg: ['#2a1a14', '#7a5a3a'], mouthW: 15 } },
+    { id: 'art', name: 'Teo Marchi', role: 'Art restorer', knows: 'Art history', subjects: ['art'],
+      hello: 'I spend my days under these paintings. Here\'s how to see it.', unsure: 'Paint I know; this, not really. The most I can say is this.',
+      look: { seed: 47, skin: '#e9c4a6', hair: '#3a2818', hairStyle: 'short', age: 0.35, W: 61, J: 51, cloth: '#3a4a5a', eyes: '#4a6a8a', beard: '#3a2818', bg: ['#1a1e24', '#5a6a7a'] } },
+    { id: 'codes', name: 'Ines Valli', role: 'Codebreaker', knows: 'Military history · every cipher', subjects: ['military'], formats: ['text'],
+      hello: 'Codes and campaigns, my favourite. Go slowly.', unsure: 'Not one of mine. I only know the textbook line.',
+      look: { seed: 59, fem: true, skin: '#7a5236', hair: '#1a1a1a', hairStyle: 'long', age: 0.25, W: 55, J: 38, cloth: '#1d2a24', eyes: '#2a1a10', lip: '#6a2a26', earring: true, bg: ['#101814', '#3a5a4a'], mouthW: 15 } },
+  ],
   maxHeat: 3,
   guessAt: 4, // seals broken before the word may be guessed (Hitoshi's choice)
   subjects: [

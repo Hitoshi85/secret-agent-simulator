@@ -1,9 +1,9 @@
 // A seal case on screen: seals at landmarks, the seal board (Notebook), a sheet per question format, the
 // word guess and endings. Rules in seals.js; it offers view.js's calls, so game.js treats both alike.
 import * as THREE from 'three';
-import { newSealCase, openSeal, answer, letters, guess, canGuess, brokenCount, claim } from './seals.js';
+import { newSealCase, openSeal, answer, letters, guess, canGuess, brokenCount, claim, phone } from './seals.js';
 import { lamps, isComplete } from './quiz.js';
-import { handlerHTML } from '../people/portrait.js';
+import { handlerHTML, portraitURL, BUST, AVATAR } from '../people/portrait.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
@@ -15,6 +15,9 @@ const BOOK_GEO = new THREE.BoxGeometry(0.34, 0.08, 0.46), BOOK_MAT = new THREE.M
 const FORMATS = { choice: 'Multiple choice', number: 'Calculation', text: 'Cipher', order: 'Put in order', match: 'Match pairs', switches: 'Control logic' };
 const SEEN_KEY = 'compass-seen';
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+// Calls to a friend per play: ?variant=calls1, calls2 or calls3 tries the other counts (game feel, R-rule).
+const CALLS = { calls1: 1, calls2: 2, calls3: 3 }[new URLSearchParams(globalThis.location?.search || '').get('variant')];
 
 function loadSeen() { try { return new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || '[]')); } catch { return new Set(); } }
 function saveSeen(seen) { try { localStorage.setItem(SEEN_KEY, JSON.stringify([...seen].slice(-2000))); } catch { /* private mode */ } }
@@ -34,6 +37,7 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
   const place = (t, [x, z]) => { t.at = [x, z]; t.mesh.position.x = x; t.mesh.position.z = z; t.ring.position.x = x; t.ring.position.z = z; if (t.kind === 'ledger') t.mesh.position.y = 0.06; };
   v.reset = () => {
     v.c = newSealCase(def, random, seen); v.cur = null; v.guessing = false; // a new play starts with fresh input
+    if (CALLS) v.c.calls = CALLS;
     for (const t of v.targets) {
       if (t.kind === 'seal') { place(t, v.c.seals.find((s) => s.id === t.id).site.at); t.mesh.visible = t.ring.visible = true; } else { place(t, v.c.word.at); t.mesh.visible = t.ring.visible = false; }
     }
@@ -59,7 +63,7 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
   v.hideTalk = () => { $('talk').hidden = true; };
   v.sheetOpen = () => !$('casesheet').hidden;
   const open = (html, cls = '') => { $('caseBody').className = 'sheet case seal ' + cls; $('caseBody').innerHTML = html; $('casesheet').hidden = false; v.hideTalk(); };
-  v.close = () => { $('casesheet').hidden = true; v.cur = null; v.guessing = false; };
+  v.close = () => { $('casesheet').hidden = true; v.cur = null; v.guessing = false; v.calling = false; };
 
   v.caseFile = () => open(`<div class="stamp">CASE ${esc(def.number)}</div><p class="kicker">Firenze · ${esc(def.time)}</p>
     <h1>${esc(def.title)}</h1>${def.briefing.map((p) => `<p>${p}</p>`).join('')}
@@ -97,7 +101,7 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
   function render(s, msg = '') {
     const q = s.q, done = s.broken;
     let body = '';
-    if (q.format === 'choice') body = q.options.map((o, i) => `<button type="button" class="opt${done && i === q.answer ? ' right' : ''}${s.wrong.includes(i) ? ' wrong' : ''}" data-q="opt" data-i="${i}"><span class="k">${'ABCD'[i]}</span>${esc(o)}</button>`).join('');
+    if (q.format === 'choice') body = q.options.map((o, i) => `<button type="button" class="opt${done && i === q.answer ? ' right' : ''}${s.wrong.includes(i) || s.struck.includes(i) ? ' wrong' : ''}" data-q="opt" data-i="${i}"><span class="k">${'ABCD'[i]}</span>${esc(o)}</button>`).join('');
     if (q.format === 'number') body = `<div class="entry"><span>${esc(v.input) || '&nbsp;'}</span> ${esc(q.unit)}</div>${pad([...'123456789', '⌫', '0', '.'])}`;
     if (q.format === 'text') body = `<div class="cipher">${q.cipher.split('   ').map((g) => `<span>${esc(g)}</span>`).join(' ')}</div><div class="entry letters">${[...Array(q.answer.length).keys()].map((i) => `<span>${v.input[i] || ''}</span>`).join('')}</div>${pad([...LETTERS, '⌫'], 'abc')}`;
     if (q.format === 'order') body = `<div class="olist">${v.input.map((t, i) => `<div class="orow" data-row="${i}"><span class="grip">⋮⋮</span>${esc(t)}</div>`).join('')}</div><p class="small">Hold and drag a line to move it.</p>`;
@@ -107,13 +111,36 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
     const foot = done
       ? `<div class="reveal"><b>Seal broken: letter ${s.letter}, slot ${s.slot + 1} of ${v.c.seals.length}.</b> ${q.explain}${v.c.known ? `<br><b>All six broken: ${v.c.word.word}.</b> The ledger is at ${esc(v.c.word.place)}.` : ''}</div>
         <button type="button" data-q="board">Back to the seal board</button>`
-      : `${msg ? `<p class="qmsg">${msg}</p>` : ''}${v.c.hinted.includes(s.id) ? `<p class="small hint">Hint: ${q.hint}</p>` : ''}
+      : `${msg ? `<p class="qmsg">${msg}</p>` : ''}${v.c.hinted.includes(s.id) ? `<p class="small hint">Hint: ${q.hint}</p>` : ''}${s.called.map(callNote).join('')}
         <div class="qbtns"><button type="button" class="close" data-q="hint">Hint</button>${action ? `<button type="button" data-q="submit"${isComplete(q, q.format === 'match' ? v.input.pairs : v.input) ? '' : ' class="off"'}>${action}</button>` : ''}</div>
+        ${friends.length ? `<button type="button" class="phonef${v.c.calls ? '' : ' off'}" data-q="friends">Phone a friend <span>${v.c.calls ? `${v.c.calls} call${v.c.calls > 1 ? 's' : ''} left` : 'no calls left'}</span></button>` : ''}
         <button type="button" class="close" data-case="close">Leave it for now</button>`;
     open(`<span class="subj">${esc(s.subject.name)}</span><span class="fmt">${FORMATS[q.format]}</span>
       <h2>${esc(q.title)}</h2><p>${q.prompt}</p>${body}${foot}`, 'quiz');
     if (q.format === 'match') requestAnimationFrame(drawLines);
   }
+  // Phone a friend: the contact list, then the call. The call stays on the seal's sheet as a note.
+  const friends = def.friends || [];
+  const friend = (id) => friends.find((f) => f.id === id);
+  const callNote = (k) => `<div class="callnote${k.expert ? '' : ' weak'}"><img alt="" src="${portraitURL(friend(k.friend).look, AVATAR)}"><p><b>${esc(friend(k.friend).name)}:</b> ${k.text}</p></div>`;
+  v.friends = () => {
+    const s = seal(v.cur); if (!s || s.broken) return null;
+    v.calling = true;
+    open(`<p class="kicker">Phone · Friends</p><h2>Who do you ring?</h2>
+      <p class="fnote">An expert on <b>${esc(s.subject.name)}</b> talks you through this seal. Anyone else only knows the short hint. ${v.c.calls ? `Calls left this case: <b>${v.c.calls}</b>.` : '<b>No calls left this case.</b>'}</p>
+      ${friends.map((f) => `<button type="button" class="friend${v.c.calls ? '' : ' off'}" data-q="ring" data-f="${f.id}"><img alt="" src="${portraitURL(f.look, BUST)}"><span><b>${esc(f.name)}</b><br>${esc(f.role)}<br><em>${esc(f.knows)}</em></span></button>`).join('')}
+      <button type="button" class="close" data-q="back">Back to the seal</button>`, 'gadget');
+    return friends.length;
+  };
+  v.ring = (id) => {
+    const s = seal(v.cur), f = friend(id), k = s && phone(v.c, s.id, id); v.calling = false;
+    if (!k) { render(s, v.c.calls ? '' : 'No calls left this case.'); return null; }
+    open(`<p class="kicker">Phone · ${esc(f.role)}</p><div class="contact"><img class="av" alt="" src="${portraitURL(f.look, BUST)}"><div><div class="n">${esc(f.name)}</div><div class="s">● On the line</div></div></div>
+      <div class="msgrow"><img class="mini" alt="" src="${portraitURL(f.look, AVATAR)}"><p class="msg">${k.expert ? f.hello : f.unsure} ${k.text}</p></div>
+      <p class="small">Calls left this case: ${v.c.calls}</p><button type="button" class="close" data-q="back">Back to the seal</button>`, 'gadget');
+    return k;
+  };
+
   const pad = (keys, cls = '') => `<div class="keys ${cls}">${keys.map((k) => `<button type="button" data-q="key" data-k="${k}">${k}</button>`).join('')}</div>`;
 
   function matchHtml(q) {
@@ -206,6 +233,9 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
     if (v.guessing && k === 'key') { const free = letters(v.c).filter((ch) => !ch).length; v.input = b.dataset.k === '⌫' ? v.input.slice(0, -1) : v.input.length < free ? v.input + b.dataset.k : v.input; return v.guessSheet(); }
     if (k === 'sendguess') return fullGuess().length < v.c.word.word.length ? v.guessSheet('Fill every gap first.') : v.guess(fullGuess());
     if (!s || s.broken) return;
+    if (k === 'friends') return v.c.calls ? v.friends() : render(s, 'No calls left this case.');
+    if (k === 'ring') return v.ring(b.dataset.f);
+    if (k === 'back') { v.calling = false; return render(s); }
     if (k === 'hint') { if (!v.c.hinted.includes(s.id)) v.c.hinted.push(s.id); return render(s); }
     if (k === 'opt') return v.answer(i);
     if (k === 'key') {
