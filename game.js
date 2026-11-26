@@ -196,6 +196,7 @@ function advance(dt) {
   }
   if (!agent.path) marker.material.opacity = Math.max(0, marker.material.opacity - dt * 2);
   updateCrowd(crowd, dt);
+  caseView.update?.(dt); // Case 02's stray cats
   navaids.update(dt, innerWidth, innerHeight);
   runPill.classList.toggle('on', agent.running && agent.walking);
   updateCamera(camera, agent, dt, state.clock);
