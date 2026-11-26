@@ -25,7 +25,7 @@ test('Feedback after a lost chase and some casework carries the session in the i
     C.input.keys.brake = false; C.action('retry'); A.step(1 / 30); C.action('skip'); A.step(1 / 30);
     A.act('close');
     A.act('interact', 'witness', 'flowers'); // walk over and hear the first clue
-    for (let i = 0; i < 2000 && A.agent.path; i++) A.step(0.05);
+    for (let i = 0; i < 4000 && A.agent.path; i++) A.step(0.05);
     A.step(0.05); A.act('close');
     A.act('accuse', A.case.suspects.findIndex((s, i) => i !== A.case.thief)); A.step(0.05);
     for (let i = 0; i < 100; i++) A.step(0.1); // ten seconds with nothing new

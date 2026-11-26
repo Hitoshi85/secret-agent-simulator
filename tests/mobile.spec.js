@@ -91,7 +91,7 @@ test.describe('on a phone', () => {
     const u = new URL(opened[0]);
     expect(u.origin + u.pathname).toBe('https://github.com/hitoshi85/secret-agent-simulator/issues/new');
     expect(u.searchParams.get('template')).toBe('feedback.yml');
-    expect(u.searchParams.get('context')).toContain('Where: Piazza del Duomo');
+    expect(u.searchParams.get('context')).toContain('Where: Piazza della Signoria');
     expect(u.searchParams.get('device')).toBeTruthy();
   });
 });

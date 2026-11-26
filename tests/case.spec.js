@@ -82,10 +82,10 @@ test('the case file opens the case, and every witness and trace stands on a stre
 test('walk up to a witness, crack the phone, and the notebook keeps track', async ({ page }) => {
   const errors = await open(page);
   await page.evaluate(() => window.__agent.act('close'));
-  // The flower seller is a short walk from the start: tap them and the agent walks over and talks.
+  // The flower seller is by the Duomo, a walk up Via dei Calzaiuoli from Signoria: tap them and the agent walks over and talks.
   const r = await page.evaluate(() => {
     const A = window.__agent, how = A.act('interact', 'witness', 'flowers');
-    for (let i = 0; i < 2000 && A.agent.path; i++) A.step(0.05);
+    for (let i = 0; i < 4000 && A.agent.path; i++) A.step(0.05);
     A.step(0.05);
     return { how, notes: A.case.notes.length, out: A.case.suspects.filter((s) => s.out).length };
   });
