@@ -7,7 +7,7 @@ import { buildCity } from './src/world/buildings.js';
 import { buildLandmarks } from './src/world/landmarks.js';
 import { makeRenderer, makeScene } from './src/scene.js';
 import { makeCamera, fitCamera, updateCamera, cam, PITCH } from './src/camera.js';
-import { makeAgent, updateAgent, walkTo, teleport } from './src/agent.js';
+import { makeAgent, updateAgent, walkTo, teleport, SPEED_VARIANTS } from './src/agent.js';
 import { makeCrowd, updateCrowd } from './src/people/crowd.js';
 import { FACE_ATLAS } from './src/people/figure.js';
 import { setupUI, showLocation, toast, show } from './src/ui.js';
@@ -33,6 +33,7 @@ scene.add(city, buildLandmarks());
 const agent = makeAgent(scene, START.at, START.face);
 const crowd = makeCrowd(scene, CROWD);
 const params = new URL(location.href).searchParams;
+if (SPEED_VARIANTS[params.get('variant')]) agent.speedScale = SPEED_VARIANTS[params.get('variant')]; // walk and run speed to try
 // The case: Case 02 unless the title's case picker (or ?case=<id>) chooses another. It is built when
 // the player leaves the title, so the pick never needs undoing.
 let def = pickCase(params.get('case')), caseView = null, navaids = null;

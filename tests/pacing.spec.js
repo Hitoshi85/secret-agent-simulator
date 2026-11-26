@@ -25,6 +25,7 @@ test('running covers twice the ground of walking', async ({ page }) => {
   expect(r.walk.running).toBe(false);
   expect(r.run.running).toBe(true);
   expect(r.run.d / r.walk.d).toBeCloseTo(2, 1);
+  expect(r.walk.d).toBeCloseTo(8.4, 0); // walking twice the first 4.2 m/s (Hitoshi, 2026-11-26)
   expect(errors).toEqual([]);
 });
 
@@ -74,4 +75,12 @@ test('the minimap and the big map draw the city', async ({ page }) => {
   await expect(page.locator('#map')).toBeHidden();
   expect(await page.evaluate(() => { window.__agent.step(0.05); return window.__agent.state.area; })).toBe('Piazza della Signoria');
   expect(errors).toEqual([]);
+});
+
+test('?variant=speed1.5 and speed2.5 try other walk and run speeds', async ({ page }) => {
+  for (const [v, f] of [['speed1.5', 1.5], ['speed2', 2], ['speed2.5', 2.5], ['nope', 2]]) {
+    await page.goto(`/index.html?case=dossier&variant=${v}`);
+    await page.waitForFunction(() => window.__agent && window.__agent.stats.frames > 2, null, { timeout: 60000 });
+    expect(await page.evaluate(() => window.__agent.agent.speedScale)).toBe(f);
+  }
 });
