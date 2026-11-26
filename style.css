@@ -247,3 +247,12 @@ body.chasing .chasehelp { top: calc(170px + env(safe-area-inset-top)); bottom: a
   #cases { flex-direction: row; }
   #cases button { flex: 1; }
 }
+/* Case 02's finds: the card's icon and the album grid */
+.findicon { width: 84px; height: 84px; margin: 2px auto 4px; background: #fffaf0; border: 1.5px solid #e0d4bb; border-radius: 50%; display: grid; place-items: center; }
+.findicon svg { width: 64px; height: 64px; }
+.agrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 4px 0 10px; }
+.atile { background: #fffaf0; border: 1.5px solid #e0d4bb; border-radius: 12px; padding: 4px 2px; text-align: center; }
+.atile svg { width: 46px; height: 46px; display: block; margin: 0 auto; }
+.atile span { display: block; font-size: 10.5px; line-height: 1.15; color: #2a2118; min-height: 24px; }
+.atile.off { background: transparent; border-style: dashed; }
+.atile.off span { color: #a8977c; }
