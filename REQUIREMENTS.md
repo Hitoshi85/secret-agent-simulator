@@ -8,8 +8,8 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 - **Play dev (latest main):** https://hitoshi85.github.io/secret-agent-simulator/dev/ (add `?v=<short commit>`
   on a phone to skip a cached copy; the current links with that suffix are always in [README.md](README.md))
 - **Backlog:** [open issues](https://github.com/Hitoshi85/secret-agent-simulator/issues)
-- **Mockups:** the agreed look (v2), the case screens (case 01, case 02), the title's case picker and the Tuscany car chase are in [docs/mockups/](docs/mockups/)
-- **Last updated:** 2026-11-21
+- **Mockups:** the agreed look (v2), the case screens (case 01, case 02), the title's case picker, the Tuscany car chase and Case 02's cats and keepsakes are in [docs/mockups/](docs/mockups/)
+- **Last updated:** 2026-11-26
 
 ## 1. Core requirements
 
@@ -45,6 +45,7 @@ is recorded here in the same PR or thread that handles it (see the rule in [CLAU
 | R26 | Painted noir characters (Hitoshi's choices, 2026-11-21, mockups docs/mockups/case-characters/): witnesses get a painted portrait on the talk card, the Notebook's suspects get painted faces (coat, bag, hat as in the crowd), and the handler has a contact portrait on the Phone in both cases. Portraits are drawn in code from each person's look, so the card matches the person in the street. The walking people have arms and legs on joints inside the body (no gaps) and painted faces from one 1024 px atlas, with no extra draw calls. | Done (#66) |
 | R27 | Phase one story (Hitoshi's request, 2026-11-21): the chase and both cases serve one objective, to find and take down a villain who destroys historical artifacts, landmarks and human history and culture. The villain stays unidentified: driven by revenge on culture itself (kept hidden), and by the end of phase one the player learns only that someone is behind it all. It starts like a heist: a dealer in stolen art drives the off-roader and his call at the chase's end mentions an employer; Case 02's ledger note ("Not for sale. Someone else wanted it gone.") shows the dealer was never the buyer, and a lost case ends with the ledger burned; Case 01's win card says the thief was paid by someone they never met; both cases' win and loss cards end with the handler: "Pienza, and now this. Someone is behind all of it." Words only: no change to mechanics, length, scenes or flow. Proposal: `story/phase-one-villain-proposal.md` in the project files. | Done (#67)
 | R28 | Phone a friend in Case 02 (Hitoshi's choices, 2026-11-26): a seal's sheet has a Phone a friend button showing the calls left. It opens three friends with painted portraits: Bruna Ferri, historian (world history, history of technology), Teo Marchi, art restorer (art history), and Ines Valli, codebreaker (military history and every cipher); the engineer waits until the engineering seals return. The right friend talks you through the seal with its own numbers or letters and, on multiple choice, rules out two wrong answers (picking one costs no Heat); anyone else only gives the short hint. Every call uses one of the case's calls, 2 by default; `?variant=calls1`, `calls2` and `calls3` are the versions to play before Hitoshi picks the count. | In progress (#76) |
+| R29 | Stray cats and keepsakes in Case 02 (Hitoshi's request, 2026-11-26, mockups docs/mockups/case-02-finds/): stray cats wander and sit in the streets, two at Heat 0 and two more for every Heat point, from eight named coats shuffled each play; nine stalls in fixed spots hold six Florence foods (espresso, schiacciata, cantucci, lampredotto, gelato, ribollita) and three souvenirs (marbled paper, a leather bookmark, a postcard of Ponte Vecchio), marked with a pale blue ring. Tapping one opens a card with a painted icon and a Florence fact; the Notebook's Album shows every cat, food and souvenir found, kept on the phone across plays. Collectibles only: no change to Heat, the seals, leads or Case 01. | Done (#77) |
 
 ### How we work
 
@@ -83,7 +84,6 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 
 | Date | Feedback / request from Hitoshi | Outcome |
 |---|---|---|
-| 2026-11-21 | "Shorter car chase (1/4 of the length)", "Move on if user keeps the car in sight for a distance or actually catches up", "Different route each time". Cards: 30 s in sight in a row, or catching right up; random roads every run. | R21: one drive of about 45 s (1.5 km) out of Pienza, a new road and traffic every run, won early by 30 s in sight or catching up. PR #34. |
 | 2026-11-21 | "Less speed penalty for being off road", "Show wheel direction because physics don't seem to line up", then "a different indicator of wheel direction on bottom of screen" and mockups of each. Cards: light slowdown; steering indicator (slider bar centred at the bottom, Brake at the bottom right; docs/mockups/chase-steer.jpg). | R21: off the road tops out near 115 km/h (was 61); a steering slider centred at the bottom and Brake moved to the bottom right. The heading was checked and matches the steering (a test now checks it). PR #34. |
 | 2026-11-21 | Reviewed the agentic AI analysis of the repo; chose "Yes, build it now" for "Feedback button sends session context", then "Summary + last 10 events". | R22, issue #37: in-memory event log and session context in the Feedback issue. PR #40. |
 | 2026-11-21 | "To make GitHub deploy faster, is there anything that I need to change?" Chose "Do both fixes"; cards: 3 parallel jobs; split the deploy's tests too; main's comparison screenshots alongside; README.md only skips the browser tests. | W17: tests in 3 shards on PRs and deploys, README-only changes get lint only, the required check sums up the shards. PR #41. |
@@ -102,6 +102,7 @@ Newest at the bottom, latest 20 rows only: when a new row would make 21, move th
 | 2026-11-26 | "Change end cipher for Case 02 each time". Cards: "Bigger list, no repeats"; "Words that hint the place". | R20: 20 six-letter hidden words over the same six ledger places (was 6), remembered on the phone so none repeats until all have been played. PR #72. |
 | 2026-11-26 | "Don't show mechanical/electrical engineering questions for now but keep in repository." Card: two more history seals. | Case 02 keeps six seals: More world history and More art history replace the engineering seals, which stay in the code and come back with `?eng` (#74). |
 | 2026-11-26 | "Phone a friend option for Case 02 to get more detailed hints". Cards: pick one of three friends; the expert talks you through (a wrong friend gives the short hint); historian, art expert and codebreaker while the engineering seals are hidden; screens approved ("Looks good, ship to dev"). | R28, issue #73: Phone a friend on every seal, 2 calls by default with `?variant=calls1/2/3` to play. PR #76. |
+| 2026-11-26 | "Pick up items (cats, Florence food, etc.)" and "Have stray cats based on Heat". Cards: "Collectibles only"; "More cats as Heat rises"; "Case 02 only"; "Cats, food and souvenirs" (album kept on the phone); mockups: "Build as shown". | R29, issue #75, PR #77: stray cats (2 at Heat 0, 2 more per point), nine food and souvenir stalls, finds cards and an Album page in the Notebook. Mockups in `docs/mockups/case-02-finds/`. |
 | 2026-11-26 | "Make running in both cases twice as fast". Card: "Walking and running". | R6: walking 8.4 m/s (was 4.2) and running 16.8 m/s (was 8.4) in both cases; `?variant=speed1.5` / `speed2.5` try 1.5x or 2.5x, with the playtester's times in the PR. PR #79. |
 
 ## 4. Open backlog
@@ -121,6 +122,7 @@ Add the `ready` label to an issue to start it.
 | #35 | AI playtester: persona bots that play every mode (W18, R23) | Done (#42) |
 | #62 | Phase one story: a hidden villain behind the chase and both cases (R27) | Done (#67) |
 | #50 | Weekly task proposals from the backlog (W19) | In progress (#52) |
+| #75 | Case 02: stray cats with Heat, Florence food and souvenirs, the album (R29) | In progress (#77) |
 | #63 | Painted noir characters: portraits on the cards, joined limbs and painted faces on the walkers (R26) | Done (#66) |
 | #73 | Case 02: phone a friend for more detailed hints (R28) | In progress (#76) |
 

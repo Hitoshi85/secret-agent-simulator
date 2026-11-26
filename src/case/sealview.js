@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { newSealCase, openSeal, answer, letters, guess, canGuess, brokenCount, claim, phone } from './seals.js';
 import { lamps, isComplete } from './quiz.js';
 import { handlerHTML, portraitURL, BUST, AVATAR } from '../people/portrait.js';
+import { makeFinds } from './findsview.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
@@ -33,30 +34,34 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
   for (const s of def.subjects) { const mesh = post(), r = ring(); v.group.add(mesh, r); v.targets.push({ kind: 'seal', id: s.id, mesh, ring: r, at: [0, 0] }); }
   const book = new THREE.Mesh(BOOK_GEO, BOOK_MAT), bookRing = ring();
   v.group.add(book, bookRing); v.targets.push({ kind: 'ledger', id: 'ledger', mesh: book, ring: bookRing, at: [0, 0] });
+  const finds = makeFinds({ group: v.group, random }); v.finds = finds; v.targets.push(...finds.targets); // stray cats and keepsakes
 
   const place = (t, [x, z]) => { t.at = [x, z]; t.mesh.position.x = x; t.mesh.position.z = z; t.ring.position.x = x; t.ring.position.z = z; if (t.kind === 'ledger') t.mesh.position.y = 0.06; };
   v.reset = () => {
     v.c = newSealCase(def, random, seen); saveSeen(seen); v.cur = null; v.guessing = false; // a new play starts with fresh input
     if (CALLS) v.c.calls = CALLS;
     for (const t of v.targets) {
+      if (t.kind === 'cat' || t.kind === 'find') continue;
       if (t.kind === 'seal') { place(t, v.c.seals.find((s) => s.id === t.id).site.at); t.mesh.visible = t.ring.visible = true; } else { place(t, v.c.word.at); t.mesh.visible = t.ring.visible = false; }
     }
-    hud();
+    finds.reset(); hud();
   };
+  v.update = (dt) => finds.update(dt, v.c.heat, agent);
   const seal = (id) => v.c.seals.find((s) => s.id === id);
 
   const hitList = [];
   v.pick = (ray) => {
     hitList.length = 0;
-    for (const t of v.targets) if (t.mesh.visible) hitList.push(t.mesh, t.ring);
+    for (const t of v.targets) if (t.mesh.visible) { hitList.push(t.mesh); if (t.ring) hitList.push(t.ring); }
     const hit = ray.intersectObjects(hitList, true)[0];
     if (!hit) return null;
     return v.targets.find((t) => t.ring === hit.object || t.mesh === hit.object || t.mesh === hit.object.parent) || null;
   };
   v.where = (t) => t.at;
-  v.leads = () => v.targets.filter((t) => t.mesh.visible && (t.kind === 'ledger' || !seal(t.id).broken));
+  v.leads = () => v.targets.filter((t) => t.mesh.visible && (t.kind === 'ledger' || (t.kind === 'seal' && !seal(t.id).broken)));
   v.interact = (t) => {
     if (v.c.status !== 'open') return null;
+    if (t.kind === 'cat' || t.kind === 'find') { const r = finds.take(t); open(r.html, 'find'); return r.fresh ? 'found' : 'again'; }
     if (t.kind === 'ledger') { claim(v.c); ending(); return 'won'; }
     v.ask(t.id); return 'seal';
   };
@@ -89,8 +94,10 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
     open(`<p class="kicker">Notebook · seal board</p><h2>Six seals, any order</h2>
       <p class="small">Walk to any seal and tap it. Its question is drawn fresh for this play.</p>${rows}
       <p class="kicker" style="margin-top:10px !important">Hidden word</p>${slotsHtml()}${foot}
+      <button type="button" class="close" data-q="album">Album · ${finds.album.size} found</button>
       <button type="button" class="close" data-case="close">Close</button>`, 'book');
   };
+  v.album = () => open(finds.albumHTML(), 'book album');
 
   // A seal's question.
   v.ask = (id) => {
@@ -229,6 +236,7 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
     const b = e.target.closest('[data-q]'); if (!b || $('casesheet').hidden) return;
     const k = b.dataset.q, i = Number(b.dataset.i), s = v.cur && seal(v.cur);
     if (k === 'board') { v.guessing = false; return v.notebook(); }
+    if (k === 'album') { v.guessing = false; v.cur = null; return v.album(); }
     if (k === 'guess') { v.input = ''; v.guessing = true; return v.guessSheet(); }
     if (v.guessing && k === 'key') { const free = letters(v.c).filter((ch) => !ch).length; v.input = b.dataset.k === '⌫' ? v.input.slice(0, -1) : v.input.length < free ? v.input + b.dataset.k : v.input; return v.guessSheet(); }
     if (k === 'sendguess') return fullGuess().length < v.c.word.word.length ? v.guessSheet('Fill every gap first.') : v.guess(fullGuess());
