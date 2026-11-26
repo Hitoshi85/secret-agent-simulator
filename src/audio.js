@@ -267,7 +267,7 @@ export function makeAudio() {
   };
   // On foot: a heel on stone every stride, quicker and harder when running.
   a.walk = (agent) => {
-    const stride = agent.running ? 1.3 : 0.8;
+    const stride = agent.running ? 0.65 * (agent.runFactor || 2) : 0.8; // the same footfall rate at any run speed
     if (agent.walked - lastWalked < stride) { if (agent.walked < lastWalked) lastWalked = agent.walked; return; }
     lastWalked = agent.walked;
     if (paused || !agent.walking) return;

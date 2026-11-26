@@ -12,7 +12,7 @@ async function open(page) {
   return errors;
 }
 
-test('running covers twice the ground of walking', async ({ page }) => {
+test('running covers four times the ground of walking', async ({ page }) => {
   const errors = await open(page);
   const r = await page.evaluate(() => {
     const A = window.__agent, go = (run) => {
@@ -24,7 +24,7 @@ test('running covers twice the ground of walking', async ({ page }) => {
   });
   expect(r.walk.running).toBe(false);
   expect(r.run.running).toBe(true);
-  expect(r.run.d / r.walk.d).toBeCloseTo(2, 1);
+  expect(r.run.d / r.walk.d).toBeCloseTo(4, 1); // twice the old run (Hitoshi, 2026-11-26)
   expect(errors).toEqual([]);
 });
 
@@ -74,4 +74,12 @@ test('the minimap and the big map draw the city', async ({ page }) => {
   await expect(page.locator('#map')).toBeHidden();
   expect(await page.evaluate(() => { window.__agent.step(0.05); return window.__agent.state.area; })).toBe('Piazza della Signoria');
   expect(errors).toEqual([]);
+});
+
+test('?variant=run1.5 and run2.5 try other run speeds (3x and 5x the walk)', async ({ page }) => {
+  for (const [v, f] of [['run1.5', 3], ['run2', 4], ['run2.5', 5], ['nope', 4]]) {
+    await page.goto(`/index.html?case=dossier&variant=${v}`);
+    await page.waitForFunction(() => window.__agent && window.__agent.stats.frames > 2, null, { timeout: 60000 });
+    expect(await page.evaluate(() => window.__agent.agent.runFactor)).toBe(f);
+  }
 });
