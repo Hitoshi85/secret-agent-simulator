@@ -130,13 +130,28 @@ export default {
     { id: 'ponte', name: 'Ponte Vecchio', at: [-140, 668] },
     { id: 'pitti', name: 'Piazza de\' Pitti', at: [-130, 850] },
   ],
-  // The hidden word, one per play, and the place it sends you for the ledger.
+  // The hidden word, one per play, and the place it hints at, where the ledger waits. Each phone plays
+  // every word once before any repeats (Hitoshi, 2026-11-26). One letter per seal: six letters.
   words: [
     { word: 'CUPOLA', place: 'the Duomo\'s dome', at: [66, 4] },
+    { word: 'MARBLE', place: 'the Duomo\'s dome', at: [66, 4] },
+    { word: 'VAULTS', place: 'the Duomo\'s dome', at: [66, 4] },
     { word: 'LOGGIA', place: 'the Loggia dei Lanzi', at: [-56, 516] },
+    { word: 'STATUE', place: 'the Loggia dei Lanzi', at: [-56, 516] },
+    { word: 'ARCHES', place: 'the Loggia dei Lanzi', at: [-56, 516] },
+    { word: 'SABINE', place: 'the Loggia dei Lanzi', at: [-56, 516] },
     { word: 'BRIDGE', place: 'Ponte Vecchio', at: [-140, 660] },
+    { word: 'JEWELS', place: 'Ponte Vecchio', at: [-140, 660] },
+    { word: 'VASARI', place: 'Ponte Vecchio', at: [-140, 660] },
     { word: 'BELFRY', place: 'the Campanile', at: [-104, 60] },
+    { word: 'GIOTTO', place: 'the Campanile', at: [-104, 60] },
+    { word: 'CHIMES', place: 'the Campanile', at: [-104, 60] },
     { word: 'CLOCKS', place: 'the Palazzo Vecchio tower', at: [-46, 444] },
+    { word: 'TURRET', place: 'the Palazzo Vecchio tower', at: [-46, 444] },
+    { word: 'PALACE', place: 'the Palazzo Vecchio tower', at: [-46, 444] },
     { word: 'GARDEN', place: 'the garden gate at the Pitti', at: [-124, 856] },
+    { word: 'GROTTO', place: 'the garden gate at the Pitti', at: [-124, 856] },
+    { word: 'BOBOLI', place: 'the garden gate at the Pitti', at: [-124, 856] },
+    { word: 'HEDGES', place: 'the garden gate at the Pitti', at: [-124, 856] },
   ],
 };
