@@ -151,7 +151,7 @@ export function makeFinds({ group, random = Math.random }) {
     const fresh = collect(f.album, t.id); if (fresh) saveAlbum(f.album);
     const n = f.album.size, cat = CATS.find((c) => c.id === t.id), it = ITEMS.find((i) => i.id === t.id);
     if (cat) { t.cat.target = null; t.cat.wait = 6; t.cat.sitting = true; t.mesh.geometry = catGeo[t.id][1]; t.mesh.position.y = 0; } else { t.mesh.visible = false; t.ring.visible = false; }
-    const head = cat ? `<p class="kicker">Stray cat · ${esc(cat.coat)}</p><h2>${esc(cat.name)}</h2><p>${esc(cat.name)} leans into your hand and purrs. ${Math.random() < 0.5 ? 'A good alibi for standing still.' : 'Nobody looks twice at someone petting a cat.'}</p>`
+    const head = cat ? `<p class="kicker">Stray cat · ${esc(cat.coat)}</p><h2>${esc(cat.name)}</h2><p>${esc(cat.name)} leans into your hand and purrs. ${random() < 0.5 ? 'A good alibi for standing still.' : 'Nobody looks twice at someone petting a cat.'}</p>`
       : `<p class="kicker">${it.kind === 'food' ? 'Florence food' : 'Souvenir'}</p><h2>${esc(it.name)}</h2><p>${esc(it.text)}</p>`;
     return { fresh, html: `<div class="findicon">${findIcon(t.id)}</div>${head}
       <p class="small">${fresh ? `New in your album: ${n} of ${TOTAL}.` : `Already in your album (${n} of ${TOTAL}).`}</p>
