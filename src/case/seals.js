@@ -1,5 +1,5 @@
 // The rules of a seal case (Case 02 and any like it), free of 3D and page code. Each play the case's
-// subjects are dealt to landmarks at random and a hidden word is picked; every seal holds one
+// subjects are dealt to landmarks at random and a hidden word not played before is picked; every seal holds one
 // question, made fresh when you first open it, and breaking it reveals the letter in its slot. Seals
 // can be broken in any order. Wrong answers and wrong guesses add Heat. Once `guessAt` seals are
 // broken you may guess the word; all of them reveal it. Then walk to the word's place to win.
@@ -7,10 +7,25 @@ import { makeQuestion, isRight, isComplete, shuffle } from './quiz.js';
 
 export function newSealCase(def, random = Math.random, seen = new Set()) {
   const sites = shuffle([...def.sites], random);
-  const word = def.words[Math.floor(random() * def.words.length)];
+  const word = pickWord(def, random, seen);
   const slots = shuffle([...Array(def.subjects.length).keys()], random);
   const seals = def.subjects.map((s, i) => ({ id: s.id, subject: s, site: sites[i], slot: slots[i], letter: word.word[slots[i]], q: null, broken: false, tries: 0, wrong: [] }));
   return { def, random, seals, word, seen, heat: 0, status: 'open', known: false, clock: 0, hinted: [] }; // status: open, won or lost
+}
+
+// The hidden word: one not played yet on this phone (kept in `seen` as 'word:CUPOLA'), with one letter
+// per seal. Once every word has been played the list starts over, never with the word just played.
+export function pickWord(def, random = Math.random, seen = new Set()) {
+  const all = def.words.filter((w) => w.word.length === def.subjects.length);
+  let fresh = all.filter((w) => !seen.has('word:' + w.word));
+  if (!fresh.length) {
+    const last = [...seen].filter((id) => String(id).startsWith('word:')).pop();
+    for (const w of all) seen.delete('word:' + w.word);
+    fresh = all.filter((w) => 'word:' + w.word !== last);
+  }
+  const word = fresh[Math.floor(random() * fresh.length)];
+  seen.add('word:' + word.word);
+  return word;
 }
 
 export const brokenCount = (c) => c.seals.filter((s) => s.broken).length;

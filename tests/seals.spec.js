@@ -71,6 +71,28 @@ test('the banks are big and clean: 40 facts per subject, 100+ events, unique pai
   expect(r.events).toBeGreaterThanOrEqual(100);
 });
 
+test('the hidden word: 20 six-letter place words, none repeats until every one is played', async ({ page }) => {
+  await open(page);
+  const r = await page.evaluate(async () => {
+    const S = await import('/src/case/seals.js');
+    const def = (await import('/src/cases/compass.js')).default;
+    const bad = [], seen = new Set(), run = [];
+    if (new Set(def.words.map((w) => w.word)).size !== def.words.length) bad.push('a word appears twice');
+    for (const w of def.words) if (!/^[A-Z]{6}$/.test(w.word) || !w.place) bad.push(`${w.word} is not a six-letter place word`);
+    for (let n = 0; n < def.words.length * 3; n++) run.push(S.newSealCase(def, Math.random, seen).word.word);
+    for (let k = 0; k < 3; k++) if (new Set(run.slice(k * def.words.length, (k + 1) * def.words.length)).size !== def.words.length) bad.push(`round ${k + 1} repeats a word`);
+    for (let n = 1; n < run.length; n++) if (run[n] === run[n - 1]) bad.push(`${run[n]} twice in a row`);
+    // The page remembers played words on the phone, and the next play picks another.
+    const first = window.__agent.case.word.word, stored = JSON.parse(localStorage.getItem('compass-seen'));
+    window.__agent.act('again');
+    return { bad, count: def.words.length, stored: stored.includes('word:' + first), next: window.__agent.case.word.word !== first };
+  });
+  expect(r.bad).toEqual([]);
+  expect(r.count).toBeGreaterThanOrEqual(20);
+  expect(r.stored).toBe(true);
+  expect(r.next).toBe(true);
+});
+
 test('the compass case plays end to end: any order, Heat, guess at four seals, the ledger', async ({ page }) => {
   const errors = await open(page);
   await page.evaluate(() => window.__agent.act('briefed'));
@@ -93,7 +115,7 @@ test('the compass case plays end to end: any order, Heat, guess at four seals, t
     out.ledger = ledger.mesh.visible && v.leads().includes(ledger);
     out.end = v.interact(ledger); out.status = c.status; out.endText = document.getElementById('caseBody').textContent;
     v.ask(c.seals[0].id); A.act('again'); out.fresh = v.cur === null; // a new play never reuses the last play's input
-    out.seen = JSON.parse(localStorage.getItem('compass-seen')).length;
+    out.seen = JSON.parse(localStorage.getItem('compass-seen')).filter((id) => !id.startsWith('word:')).length; // questions answered
     return out;
   });
   expect(r.leads).toBe(6);
