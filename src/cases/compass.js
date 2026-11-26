@@ -85,6 +85,18 @@ const WAR_WORDS = ['LEGION', 'CANNAE', 'CAVALRY', 'FLANK', 'SIEGE', 'GARRISON', 
 
 export const BANKS = { EVENTS, INVENTIONS, ARTWORKS, WAR_WORDS }; // for the tests
 
+// The engineering seals are kept but not shown for now (Hitoshi, 2026-11-26); two more history seals
+// take their places so there are still six seals, one per letter. `?eng` brings them back.
+const ENGINEERING = [
+  { id: 'mech', name: 'Mechanical engineering', makers: [gearWheel, gearSpeed, lever, pulley] },
+  { id: 'elec', name: 'Electrical engineering', makers: [logic, logic, seriesResistor, power, parallel] },
+];
+const SPARES = [
+  { id: 'world2', name: 'More world history', makers: [ordering(EVENTS), choice(FACTS.world)] },
+  { id: 'art2', name: 'More art history', makers: [choice(FACTS.art), matching(ARTWORKS, 'The lost labels', 'Four works in the guild\'s ledger have lost their labels. Join each artist to the work.')] },
+];
+const SHOW_ENGINEERING = typeof location !== 'undefined' && new URLSearchParams(location.search).has('eng');
+
 export default {
   id: 'compass',
   kind: 'seals',
@@ -129,9 +141,9 @@ export default {
     { id: 'art', name: 'Art history', makers: [choice(FACTS.art), choice(FACTS.art), matching(ARTWORKS, 'The lost labels', 'Four works in the guild\'s ledger have lost their labels. Join each artist to the work.')] },
     { id: 'military', name: 'Military history', makers: [cipher(WAR_WORDS), choice(FACTS.military)] },
     { id: 'tech', name: 'History of technology', makers: [choice(FACTS.tech), matching(INVENTIONS, 'The guild\'s heroes', 'Four statues in the guild\'s ledger have lost their plaques. Join each maker to what they are remembered for.')] },
-    { id: 'mech', name: 'Mechanical engineering', makers: [gearWheel, gearSpeed, lever, pulley] },
-    { id: 'elec', name: 'Electrical engineering', makers: [logic, logic, seriesResistor, power, parallel] },
+    ...(SHOW_ENGINEERING ? ENGINEERING : SPARES),
   ],
+  shelved: SHOW_ENGINEERING ? SPARES : ENGINEERING, // the subjects not dealt this play (kept and tested)
   // Where seals can be cut (six are used each play), in metres on the city plan.
   sites: [
     { id: 'baptistery', name: 'Baptistery doors', at: [-140, 6] },
