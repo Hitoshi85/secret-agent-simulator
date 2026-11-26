@@ -221,3 +221,57 @@ test('Case 02 is the default and the title picks Case 01; Begin still offers the
   await expect(page.locator('#cases [data-place="dossier"]')).toHaveAttribute('aria-pressed', 'true');
   expect(errors).toEqual([]);
 });
+
+test('phone a friend: an expert talks you through and rules out two answers, anyone else gives the hint, calls run out', async ({ page }) => {
+  await open(page);
+  const r = await page.evaluate(async () => {
+    const Q = await import('/src/case/quiz.js');
+    const S = await import('/src/case/seals.js');
+    const def = (await import('/src/cases/compass.js')).default;
+    const problems = [];
+    for (const s of def.subjects) for (let n = 0; n < 200; n++) {
+      const q = Q.makeQuestion(s);
+      if (!q.call || q.call === q.hint) problems.push(`${q.id}: no detailed call`);
+      if (/undefined|NaN/.test(q.call)) problems.push(`${q.id}: ${q.call}`);
+      if (q.format === 'choice' && !(q.strike.length === 2 && !q.strike.includes(q.answer) && new Set(q.strike).size === 2)) problems.push(`${q.id}: strike`);
+    }
+    for (const s of def.subjects) if (!def.friends.some((f) => f.subjects.includes(s.id)) && !['mech', 'elec'].includes(s.id)) problems.push(`nobody knows ${s.id}`);
+    const c = S.newSealCase(def), art = S.openSeal(c, 'art'), war = S.openSeal(c, 'military');
+    const start = c.calls;
+    const weak = S.phone(c, 'art', 'codes'), strong = S.phone(c, 'military', 'codes');
+    const strongText = war.q.call, weakText = art.q.hint;
+    const none = S.phone(c, 'world', 'historian');
+    const struckPick = war.q.format === 'choice' ? S.answer(c, 'military', war.q.strike[0]) : 'incomplete';
+    return { problems: problems.slice(0, 5), start, left: c.calls, weak, strong, strongText, weakText, none, struckPick, heat: c.heat, struck: war.struck.length, format: war.q.format };
+  });
+  expect(r.problems).toEqual([]);
+  expect(r.start).toBe(2);
+  expect(r.weak).toMatchObject({ expert: false, text: r.weakText });
+  expect(r.strong).toMatchObject({ expert: true, text: r.strongText });
+  expect(r.none, 'no calls left').toBeNull();
+  expect(r.left).toBe(0);
+  expect(r.struckPick, 'a ruled-out answer costs nothing').toBe('incomplete');
+  expect(r.heat).toBe(0);
+  if (r.format === 'choice') expect(r.struck).toBe(2);
+});
+
+test('phone a friend on screen: the contact list, the call, the note on the seal, and ?variant=calls3', async ({ page }) => {
+  const errors = await open(page, '/index.html?case=compass&variant=calls3');
+  const r = await page.evaluate(() => {
+    const a = window.__agent; a.act('close'); a.caseView.ask('art');
+    const btn = document.querySelector('[data-q="friends"]').textContent;
+    document.querySelector('[data-q="friends"]').click();
+    const list = document.querySelectorAll('[data-q="ring"]').length;
+    const call = a.act('ring', 'art');
+    const msg = document.querySelector('#caseBody .msg').textContent;
+    document.querySelector('[data-q="back"]').click();
+    return { btn, list, call, msg, note: !!document.querySelector('#caseBody .callnote'), left: a.case.calls };
+  });
+  expect(r.btn).toContain('3 calls left');
+  expect(r.list).toBe(3);
+  expect(r.call.expert).toBe(true);
+  expect(r.msg).toContain(r.call.text.replace(/<[^>]+>/g, '').slice(0, 20));
+  expect(r.note).toBe(true);
+  expect(r.left).toBe(2);
+  expect(errors).toEqual([]);
+});

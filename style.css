@@ -130,6 +130,18 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1612; col
 .qmsg { color: #a8322a; font-weight: 600; font-size: 13.5px; }
 .hint { background: #efe3c8; border-radius: 10px; padding: 6px 10px !important; }
 .qbtns { display: flex; gap: 8px; }
+.sheet button.phonef { background: #1c232e; color: #e6ebf2; display: flex; justify-content: center; align-items: center; gap: 8px; }
+.sheet button.phonef span { color: #8fd19e; font-size: 13px; }
+.sheet button.phonef.off, .sheet.gadget button.friend.off { opacity: .5; }
+.sheet.gadget button.friend { display: flex; gap: 12px; align-items: center; text-align: left; background: #1c232e; color: #cfd6e2; padding: 8px 10px; font-size: 14px; line-height: 1.35; }
+.sheet.gadget button.friend img { width: 52px; height: 62px; border-radius: 10px; flex: none; box-shadow: 0 0 0 2px #3a4250; }
+.sheet.gadget button.friend b { color: #e6ebf2; font-size: 16px; }
+.sheet.gadget button.friend em { color: #8fd19e; font-style: normal; font-size: 12px; }
+.callnote { display: flex; gap: 8px; align-items: flex-start; background: #e3eadf; border-radius: 10px; padding: 6px 8px; margin: 4px 0 6px; }
+.callnote img { width: 28px; height: 28px; border-radius: 50%; flex: none; }
+.callnote.weak { background: #efe3c8; }
+.sheet.case .callnote p { margin: 0; color: #2a2118; font-size: 13px; }
+.sheet.gadget .fnote { font-size: 13px; }
 .qbtns button:first-child { flex: 0 0 92px; }
 .qbtns button:only-child { flex: 1; }
 .sheet .qbtns button.off { background: #8d8679; }
