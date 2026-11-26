@@ -3,8 +3,12 @@ import * as THREE from 'three';
 import { findPath, walkable } from './world/nav.js';
 import { makeFigure, randomLook, setPose } from './people/figure.js';
 
-export const WALK_SPEED = 4.2; // a brisk game walk, m/s
-export const RUN_FACTOR = 2; // running (double tap or Shift) is twice as fast
+export const WALK_SPEED = 4.2; // the first game walk, m/s
+export const RUN_FACTOR = 2; // running (double tap or Shift) is twice the walk
+// Walking and running both twice as fast since 2026-11-26 (Hitoshi's choice): 8.4 m/s walking, 16.8 running.
+// ?variant=speed1.5 / speed2 / speed2.5 try 1.5, 2 or 2.5 times the first speeds.
+export const SPEED_SCALE = 2;
+export const SPEED_VARIANTS = { 'speed1.5': 1.5, speed2: 2, 'speed2.5': 2.5 };
 
 // Placeholder look until the player designs their own agent: charcoal suit, tie, sunglasses.
 export const AGENT_LOOK = randomLook({ top: '#2a3038', bottom: '#2a3038', skirt: false, coat: false, hair: '#1f1712', longHair: false, bag: null, skin: '#d2a582', scale: 1.04, suit: true });
@@ -14,7 +18,7 @@ export function makeAgent(scene, [x, z], [fx, fz]) {
   const ring = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.52, 40), new THREE.MeshBasicMaterial({ color: '#7fc8ff', transparent: true, opacity: 0.85, depthWrite: false }));
   ring.rotation.x = -Math.PI / 2; ring.position.y = 0.03; ring.renderOrder = 1;
   const group = new THREE.Group(); group.add(mesh, ring); scene.add(group);
-  const a = { group, mesh, x, z, heading: Math.atan2(fx, fz), path: null, phase: 0, walking: false, walked: 0, running: false };
+  const a = { group, mesh, x, z, heading: Math.atan2(fx, fz), path: null, phase: 0, walking: false, walked: 0, running: false, speedScale: SPEED_SCALE };
   place(a);
   return a;
 }
@@ -37,7 +41,7 @@ export function teleport(a, [x, z], [fx, fz]) { a.x = x; a.z = z; a.heading = Ma
 export function updateAgent(a, dt, dir, run = false) {
   let moved = 0;
   if (dir && (dir[0] || dir[1])) a.running = run;
-  const speed = WALK_SPEED * (a.running ? RUN_FACTOR : 1);
+  const speed = WALK_SPEED * a.speedScale * (a.running ? RUN_FACTOR : 1);
   if (dir && (dir[0] || dir[1])) {
     a.path = null;
     const l = Math.hypot(dir[0], dir[1]), sx = dir[0] / l * speed * dt, sz = dir[1] / l * speed * dt;
@@ -59,7 +63,7 @@ export function updateAgent(a, dt, dir, run = false) {
   a.walking = moved > 0;
   if (!a.walking) a.running = false;
   a.walked += moved;
-  a.phase += moved / (a.running ? 2.6 : 1.6); // longer strides when running
+  a.phase += moved / ((a.running ? 2.6 : 1.6) * a.speedScale); // longer strides when running, the same cadence at any speed
   setPose(a.mesh, a.walking ? a.phase : 0.25);
   place(a);
 }
