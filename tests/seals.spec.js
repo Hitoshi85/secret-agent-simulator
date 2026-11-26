@@ -19,7 +19,7 @@ test('every subject makes fair questions with one right answer; seen ones are av
     const Q = await import('/src/case/quiz.js');
     const def = (await import('/src/cases/compass.js')).default;
     const problems = [], ids = {}, formats = {};
-    for (const s of def.subjects) {
+    for (const s of [...def.subjects, ...def.shelved]) { // shelved engineering subjects stay fair too
       ids[s.id] = new Set(); formats[s.id] = new Set();
       for (let n = 0; n < 300; n++) {
         const q = Q.makeQuestion(s); ids[s.id].add(q.id); formats[s.id].add(q.format);
@@ -49,6 +49,17 @@ test('every subject makes fair questions with one right answer; seen ones are av
   expect(r.formats.elec).toEqual(['number', 'switches']);
   expect(r.formats.military).toEqual(['choice', 'text']);
   expect(r.formats.world).toEqual(['choice', 'order']);
+});
+
+test('engineering seals are hidden for now, still six seals; ?eng brings them back', async ({ page }) => {
+  const errors = await open(page);
+  const ids = () => page.evaluate(() => window.__agent.case.seals.map((s) => s.id).sort());
+  const off = await ids();
+  await open(page, '/index.html?case=compass&eng');
+  const on = await ids();
+  expect(off).toEqual(['art', 'art2', 'military', 'tech', 'world', 'world2']);
+  expect(on).toEqual(['art', 'elec', 'mech', 'military', 'tech', 'world']);
+  expect(errors).toEqual([]);
 });
 
 test('the banks are big and clean: 40 facts per subject, 100+ events, unique pairs', async ({ page }) => {
@@ -81,7 +92,7 @@ test('the compass case plays end to end: any order, Heat, guess at four seals, t
     const order = [...c.seals].reverse(); // any order works
     v.ask(order[0].id);
     const q = order[0].q;
-    const wrong = q.format === 'choice' ? (q.answer + 1) % 4 : q.format === 'number' ? q.answer + 7 : q.format === 'text' ? 'ZZZ' : q.format === 'switches' ? q.answer.map((b) => 1 - b) : q.format === 'order' ? [...q.answer].reverse() : {};
+    const wrong = q.format === 'choice' ? (q.answer + 1) % 4 : q.format === 'number' ? q.answer + 7 : q.format === 'text' ? 'ZZZ' : q.format === 'switches' ? q.answer.map((b) => 1 - b) : q.format === 'order' ? [...q.answer].reverse() : Object.fromEntries(q.left.map((l, i) => [l, q.answer[q.left[(i + 1) % 4]]]));
     out.wrong = A.act('answer', wrong); out.heat = c.heat;
     out.lockedGuess = A.act('guess', c.word.word);
     for (const s of order.slice(0, 4)) { v.ask(s.id); out[s.id] = A.act('answer', s.q.answer); }
@@ -113,7 +124,7 @@ test('the compass case plays end to end: any order, Heat, guess at four seals, t
 });
 
 test('unfinished answers cost no Heat, wrong picks stay crossed out, and the lamps stay dark until the key turns', async ({ page }) => {
-  await open(page);
+  await open(page, '/index.html?case=compass&eng'); // calculations and lamps live in the shelved engineering seals
   const r = await page.evaluate(async () => {
     const A = window.__agent, v = A.caseView, S = await import('/src/case/seals.js'), out = {};
     const find = (fmt) => { for (let n = 0; n < 300; n++) { A.act('again'); A.act('close'); const s = A.case.seals.find((x) => { v.ask(x.id); return x.q.format === fmt; }); if (s) { v.ask(s.id); return s; } } return null; };
@@ -141,7 +152,7 @@ test('unfinished answers cost no Heat, wrong picks stay crossed out, and the lam
 });
 
 test('questions answer by tapping: options, keypad, switches', async ({ page }) => {
-  await open(page);
+  await open(page, '/index.html?case=compass&eng');
   for (const fmt of ['choice', 'number', 'switches', 'text']) {
     const id = await page.evaluate((fmt) => {
       const A = window.__agent, v = A.caseView;
