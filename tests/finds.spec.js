@@ -70,3 +70,16 @@ test('every stall stands on a street and Case 01 has no strays or stalls', async
   });
   expect(r).toEqual({ onStreet: true, finds: false, n: 17, cats: [2, 4, 6, 6] });
 });
+
+test('?variant=items2, items3 and items4 put 2, 3 or 4 of each thing on the streets, spread apart', async ({ page }) => {
+  for (const [v, n] of [['items2', 18], ['items3', 27], ['items4', 36]]) {
+    await open(page, `/index.html?case=compass&variant=${v}`);
+    const r = await page.evaluate(() => {
+      const A = window.__agent, s = A.caseView.finds.targets.filter((t) => t.kind === 'find');
+      let close = 0;
+      for (const a of s) for (const b of s) if (a !== b && Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1]) < 15) close++;
+      return { n: s.length, onStreet: s.every((t) => A.walkable(...t.at)), close, leads: A.caseView.leads().every((t) => t.kind !== 'find') };
+    });
+    expect(r, v).toEqual({ n, onStreet: true, close: 0, leads: true });
+  }
+});

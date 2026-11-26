@@ -2,13 +2,11 @@
 // stalls with Florentine food and souvenirs, their cards and the album. Rules in finds.js.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { CATS, ITEMS, TOTAL, catsFor, catOrder, loadAlbum, saveAlbum, collect } from './finds.js';
+import { CATS, ITEMS, TOTAL, catsFor, catOrder, loadAlbum, saveAlbum, collect, findSpots } from './finds.js';
 import { walkable, lineClear, nearestWalkable } from '../world/nav.js';
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
 const MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85 });
-const RING_GEO = new THREE.RingGeometry(0.42, 0.52, 28);
-const RING_MAT = new THREE.MeshBasicMaterial({ color: '#8fd3c8', transparent: true, opacity: 0.85, depthWrite: false });
 const HIT_GEO = new THREE.BoxGeometry(0.9, 0.8, 1), HIT_MAT = new THREE.MeshBasicMaterial({ visible: false }); // a cat is easier to tap than it looks
 
 // One vertex-coloured geometry from boxes, cones and cylinders: [geometry, colour, x, y, z, rx, ry, rz].
@@ -65,6 +63,7 @@ const TOP = {
 function stallGeometry(id) {
   const p = [[box(0.9, 0.06, 0.6), '#6b4a2e', 0, 0.76, 0], [box(0.92, 0.2, 0.62), '#efe6d2', 0, 0.68, 0], [box(0.93, 0.05, 0.63), '#a8322a', 0, 0.62, 0]];
   for (const x of [-0.4, 0.4]) for (const z of [-0.25, 0.25]) p.push([box(0.05, 0.6, 0.05), '#4a3020', x, 0.3, z]);
+  p.push([new THREE.RingGeometry(0.84, 1.04, 28), '#8fd3c8', 0, 0.03, 0, -Math.PI / 2]); // the pale blue ring, in the same mesh (one draw call a stall)
   return build([...p, ...TOP[id]()]);
 }
 
@@ -92,7 +91,7 @@ const ICONS = {
 };
 export const findIcon = (id) => { const c = CATS.find((k) => k.id === id); return c ? catIcon(c) : `<svg viewBox="0 0 64 64">${ICONS[id]}</svg>`; };
 
-export function makeFinds({ group, random = Math.random }) {
+export function makeFinds({ group, random = Math.random, per = 1 }) {
   const f = { targets: [], album: loadAlbum(), cats: [] };
   const catGeo = {};
   for (const c of CATS) catGeo[c.id] = [catGeometry(c, false), catGeometry(c, true)];
@@ -102,12 +101,14 @@ export function makeFinds({ group, random = Math.random }) {
     const t = { kind: 'cat', id: c.id, mesh, ring: null, at: [0, 0], cat: { target: null, wait: 0, sitting: true, bob: random() * 6 } };
     f.targets.push(t);
   }
-  for (const it of ITEMS) {
-    const [x, z] = nearestWalkable(...it.at) || it.at;
-    const mesh = new THREE.Mesh(stallGeometry(it.id), MAT); mesh.position.set(x, 0, z); mesh.rotation.y = random() * Math.PI; mesh.castShadow = true;
-    const ring = new THREE.Mesh(RING_GEO, RING_MAT); ring.rotation.x = -Math.PI / 2; ring.position.set(x, 0.03, z); ring.scale.setScalar(2);
-    group.add(mesh, ring);
-    f.targets.push({ kind: 'find', id: it.id, mesh, ring, at: [x, z] });
+  // Every stall spot: each thing's own spot, plus `per - 1` more copies spread over the city.
+  const stallGeo = {};
+  for (const it of ITEMS) stallGeo[it.id] = stallGeometry(it.id);
+  for (const { id, at } of findSpots(per, walkable)) {
+    const [x, z] = nearestWalkable(...at) || at;
+    const mesh = new THREE.Mesh(stallGeo[id], MAT); mesh.position.set(x, 0, z); mesh.rotation.y = random() * Math.PI; mesh.castShadow = true;
+    group.add(mesh);
+    f.targets.push({ kind: 'find', id, mesh, ring: null, at: [x, z] });
   }
   const catT = (id) => f.targets.find((t) => t.kind === 'cat' && t.id === id);
 
@@ -122,7 +123,7 @@ export function makeFinds({ group, random = Math.random }) {
 
   f.reset = () => {
     f.order = catOrder(random); f.out = 0;
-    for (const t of f.targets) { if (t.kind === 'cat') t.mesh.visible = false; else t.mesh.visible = t.ring.visible = true; }
+    for (const t of f.targets) { if (t.kind === 'cat') t.mesh.visible = false; else t.mesh.visible = true; }
     f.update(0, 0, null);
   };
 
@@ -150,7 +151,7 @@ export function makeFinds({ group, random = Math.random }) {
   f.take = (t) => {
     const fresh = collect(f.album, t.id); if (fresh) saveAlbum(f.album);
     const n = f.album.size, cat = CATS.find((c) => c.id === t.id), it = ITEMS.find((i) => i.id === t.id);
-    if (cat) { t.cat.target = null; t.cat.wait = 6; t.cat.sitting = true; t.mesh.geometry = catGeo[t.id][1]; t.mesh.position.y = 0; } else { t.mesh.visible = false; t.ring.visible = false; }
+    if (cat) { t.cat.target = null; t.cat.wait = 6; t.cat.sitting = true; t.mesh.geometry = catGeo[t.id][1]; t.mesh.position.y = 0; } else t.mesh.visible = false;
     const head = cat ? `<p class="kicker">Stray cat · ${esc(cat.coat)}</p><h2>${esc(cat.name)}</h2><p>${esc(cat.name)} leans into your hand and purrs. ${random() < 0.5 ? 'A good alibi for standing still.' : 'Nobody looks twice at someone petting a cat.'}</p>`
       : `<p class="kicker">${it.kind === 'food' ? 'Florence food' : 'Souvenir'}</p><h2>${esc(it.name)}</h2><p>${esc(it.text)}</p>`;
     return { fresh, html: `<div class="findicon">${findIcon(t.id)}</div>${head}

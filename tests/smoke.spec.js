@@ -13,21 +13,31 @@ async function open(page) {
   return errors;
 }
 
-test('loads Florence without errors and starts in Piazza del Duomo', async ({ page }) => {
+test('loads Florence without errors; Case 02 starts in Piazza della Signoria', async ({ page }) => {
   const errors = await open(page);
   const s = await page.evaluate(() => ({ ...window.__agent.state, stats: window.__agent.stats }));
   expect(s.state).toBe('playing');
-  expect(s.area).toBe('Piazza del Duomo');
+  expect(s.area).toBe('Piazza della Signoria');
   expect(s.stats.buildings, 'palazzi fill the city').toBeGreaterThan(800);
   expect(s.stats.people, 'a crowd is out').toBeGreaterThanOrEqual(60);
-  await expect(page.locator('#locName')).toHaveText('Piazza del Duomo');
+  await expect(page.locator('#locName')).toHaveText('Piazza della Signoria');
+  const again = await page.evaluate(() => { const A = window.__agent; A.act('jump', 'ponte'); A.act('again'); return A.state.area; });
+  expect(again, 'Play again starts back in Signoria').toBe('Piazza della Signoria');
   expect(errors).toEqual([]);
+});
+
+test('Case 01 starts in Piazza della Signoria too', async ({ page }) => {
+  await page.goto('/index.html?case=dossier');
+  await page.waitForFunction(() => window.__agent && window.__agent.stats.frames > 2, null, { timeout: 60000 });
+  const area = await page.evaluate(() => { window.__agent.paused = true; window.__agent.act('start'); return window.__agent.state.area; });
+  expect(area).toBe('Piazza della Signoria');
 });
 
 test('walks from the Duomo to Ponte Vecchio along the streets', async ({ page }) => {
   const errors = await open(page);
   const r = await page.evaluate(() => {
     const A = window.__agent, seen = [], off = [];
+    A.act('jump', 'duomo'); A.act('close');
     if (!A.act('walkTo', -140, 690)) return { found: false };
     for (let i = 0; i < 6000 && A.agent.path; i++) {
       A.step(0.05);

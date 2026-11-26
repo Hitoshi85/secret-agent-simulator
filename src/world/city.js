@@ -41,7 +41,8 @@ export const PLACES = [
   { id: 'oltrarno', name: 'Oltrarno', at: [-140, 790], face: [0, -1] },
 ];
 
-export const START = { at: [92, 60], face: [-0.83, -0.56], pitch: 0.16 };
+// Both cases begin in Piazza della Signoria, facing Palazzo Vecchio (Hitoshi's choice, 2026-11-26).
+export const START = { at: [-128, 432], face: [0.85, 0.53], pitch: 0.15 };
 
 // The walk area name at a point (the HUD shows it), or null.
 export function areaAt(x, z) {

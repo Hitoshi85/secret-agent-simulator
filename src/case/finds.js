@@ -1,6 +1,7 @@
 // Case 02's collectibles: stray cats to pet and Florentine food and souvenirs to pick up, kept in an
 // album on the phone. They never change the case. More strays come out as Heat rises: two at Heat 0
 // and two more for every point. Rules only, no 3D or page code (findsview.js draws them).
+import { WALK } from '../world/city.js';
 
 // Eight coats; a play shows at most six, so meeting all of them takes a few plays (and some Heat).
 // main: the body; second: patches, chest and paws; nose: the nose and inner ears.
@@ -52,4 +53,25 @@ export function catOrder(random = Math.random) {
   const a = CATS.map((c) => c.id);
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
   return a.slice(0, catsFor(99));
+}
+
+// Stall spots: every thing at its own spot, and with per > 1 that many copies in all, the extra ones
+// at fixed walkable spots spread over the slice (at least 16 m from any other stall), the same every load.
+export function findSpots(per, walkable) {
+  const spots = ITEMS.map((i) => ({ id: i.id, at: i.at }));
+  let seed = 7919;
+  const rand = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+  const areas = WALK.map((a) => ({ r: a.r, w: (a.r[2] - a.r[0]) * (a.r[3] - a.r[1]) }));
+  const total = areas.reduce((s, a) => s + Math.sqrt(a.w), 0); // streets get a fair share against big piazzas
+  for (let copy = 1; copy < per; copy++) {
+    for (const it of ITEMS) {
+      for (let k = 0; k < 400; k++) {
+        let u = rand() * total, r = areas[0].r;
+        for (const a of areas) { u -= Math.sqrt(a.w); if (u <= 0) { r = a.r; break; } }
+        const x = r[0] + rand() * (r[2] - r[0]), z = r[1] + rand() * (r[3] - r[1]);
+        if (walkable(x, z) && spots.every((s) => Math.hypot(s.at[0] - x, s.at[1] - z) >= 16)) { spots.push({ id: it.id, at: [x, z] }); break; }
+      }
+    }
+  }
+  return spots;
 }

@@ -51,6 +51,13 @@ function openCase() {
   if (def.train) document.getElementById('locSub').textContent = `Firenze · ${def.time} · train ${def.train}`;
   navaids = makeNavaids({ caseView, agent, cam });
 }
+// Where every case begins: Piazza della Signoria (START).
+function toCaseStart() {
+  const p = START;
+  teleport(agent, p.at, p.face); cam.yaw = agent.heading; cam.pitch = p.pitch ?? START.pitch; pending = null;
+  updateCamera(camera, agent, 0, state.clock, true);
+  const area = areaAt(agent.x, agent.z); if (area && area !== state.area) { state.area = area; showLocation(area); }
+}
 const sessionLog = makeSessionLog(); // in memory only, sent nowhere until the player presses Feedback
 
 // Tap marker: a ring that pulses where the agent is heading.
@@ -98,7 +105,7 @@ function act(action, a, b, c) {
       if (!chase) { chase = makeChase({ renderer, toast, onDone: () => { state.state = 'title'; act('start'); } }); chase.resize(innerWidth, innerHeight); }
       state.state = 'chase'; show('title', false); chase.start(); return true;
     }
-    case 'start': if (state.state === 'title') { openCase(); state.state = 'playing'; show('title', false); caseView.caseFile(); } return true;
+    case 'start': if (state.state === 'title') { openCase(); state.state = 'playing'; show('title', false); toCaseStart(); caseView.caseFile(); } return true;
     case 'pick': return state.state === 'title' && pickTitleCase(a); // the title's case picker
     case 'walkTo': {
       if (state.state !== 'playing') return false;
@@ -133,7 +140,7 @@ function act(action, a, b, c) {
     case 'answer': if (!caseView) return false; return caseView.answer ? caseView.answer(a) : null; // seal cases: answer the open question
     case 'guess': if (!caseView) return false; return caseView.guess ? caseView.guess(a) : null;
     case 'ring': if (!caseView) return false; return caseView.ring ? caseView.ring(a) : null; // seal cases: phone a friend about the open seal
-    case 'again': if (!caseView) return false; caseView.reset(); sessionLog.caseStarted(state.clock); teleport(agent, START.at, START.face); cam.yaw = agent.heading; cam.pitch = START.pitch; caseView.caseFile(); return true;
+    case 'again': if (!caseView) return false; caseView.reset(); sessionLog.caseStarted(state.clock); toCaseStart(); caseView.caseFile(); return true;
     case 'interact': if (!caseView) return false; { const t = caseView.targets.find((q) => q.kind === a && String(q.id) === String(b)); return t ? approach(t) : null; }
     case 'feedback': {
       if (state.state === 'playing' && !state.paused) act('pause');

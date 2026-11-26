@@ -18,7 +18,10 @@ const SEEN_KEY = 'compass-seen';
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 // Calls to a friend per play: ?variant=calls1, calls2 or calls3 tries the other counts (game feel, R-rule).
-const CALLS = { calls1: 1, calls2: 2, calls3: 3 }[new URLSearchParams(globalThis.location?.search || '').get('variant')];
+const VARIANT = new URLSearchParams(globalThis.location?.search || '').get('variant');
+const CALLS = { calls1: 1, calls2: 2, calls3: 3 }[VARIANT];
+// Stalls per food or souvenir: ?variant=items2, items3 or items4 tries more of them around the city (game feel).
+const PER = { items2: 2, items3: 3, items4: 4 }[VARIANT] || 1;
 
 function loadSeen() { try { return new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || '[]')); } catch { return new Set(); } }
 function saveSeen(seen) { try { localStorage.setItem(SEEN_KEY, JSON.stringify([...seen].slice(-2000))); } catch { /* private mode */ } }
@@ -34,7 +37,7 @@ export function makeSealView({ scene, def, random = Math.random, agent }) {
   for (const s of def.subjects) { const mesh = post(), r = ring(); v.group.add(mesh, r); v.targets.push({ kind: 'seal', id: s.id, mesh, ring: r, at: [0, 0] }); }
   const book = new THREE.Mesh(BOOK_GEO, BOOK_MAT), bookRing = ring();
   v.group.add(book, bookRing); v.targets.push({ kind: 'ledger', id: 'ledger', mesh: book, ring: bookRing, at: [0, 0] });
-  const finds = makeFinds({ group: v.group, random }); v.finds = finds; v.targets.push(...finds.targets); // stray cats and keepsakes
+  const finds = makeFinds({ group: v.group, random, per: PER }); v.finds = finds; v.targets.push(...finds.targets); // stray cats and keepsakes
 
   const place = (t, [x, z]) => { t.at = [x, z]; t.mesh.position.x = x; t.mesh.position.z = z; t.ring.position.x = x; t.ring.position.z = z; if (t.kind === 'ledger') t.mesh.position.y = 0.06; };
   v.reset = () => {
